@@ -1,0 +1,20 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:36:5: error: implicit declaration of function 'inet_pton' [-Werror=implicit-function-declaration]"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to an MQTT-SN broker at\u00a047.102.103.1:1883\u00a0to publish state (\u201dwork or not work\u201d) every five seconds. To reduce energy, you must use emcute lib."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: ['/root/RIOT/examples/LLM_Gen/main.c:7:10: fatal error: emcute.h: No such file or directory'] and Invoke the code tool to solve the error and structure the output with a prefix and code block. "
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include <xtimer.h>\n#include \"net/emcute.h\"\n#include \"net/ipv6/addr.h\"\n#include \"net/sock/udp.h\"\n\n#define TOPIC_NAME \"state\"\n#define CLIENT_ID \"esp32_client\"\n#define BROKER_IP \"47.102.103.1\"\n#define BROKER_PORT 1883\n#define PUBLISH_INTERVAL (5 * 1000000U) // 5 seconds in microseconds\n\nstatic char state_msg[20];\nstatic emcute_topic_t topic;\n\nvoid publish_state(void) {\n    static int state = 0;\n    const char *states[] = {\"work\", \"not work\"};\n\n    // Toggle state\n    state = !state;\n    strcpy(state_msg, states[state]);\n\n    // Publish the state\n    if (emcute_pub(&topic, state_msg, strlen(state_msg), 0) != EMCUTE_OK) {\n        puts(\"Error: unable to publish state\");\n    } else {\n        printf(\"Published state: %s\\n\", state_msg);\n    }\n}\n\nint main(void) {\n    sock_udp_ep_t gw = { .port = BROKER_PORT, .family = AF_INET };\n    inet_pton(AF_INET, BROKER_IP, &gw.addr.ipv4);\n\n    // Initialize the EMCUTE stack\n    emcute_run(BROKER_PORT, CLIENT_ID);\n\n    // Connect to the MQTT-SN broker\n    if (emcute_con(&gw, true, NULL, NULL, 0, 0) != EMCUTE_OK) {\n        puts(\"Error: unable to connect to MQTT-SN broker\");\n        return 1;\n    }\n    puts(\"Connected to MQTT-SN broker\");\n\n    // Register the topic\n    topic.name = TOPIC_NAME;\n    if (emcute_reg(&topic) != EMCUTE_OK) {\n        puts(\"Error: unable to register topic\");\n        return 1;\n    }\n    printf(\"Registered topic: %s with ID: %u\\n\", topic.name, topic.id);\n\n    // Publish state every 5 seconds\n    while (1) {\n        publish_state();\n        xtimer_usleep(PUBLISH_INTERVAL);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 11
+}

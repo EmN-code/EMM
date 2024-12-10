@@ -1,0 +1,21 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:25:5: error: implicit declaration of function 'inet_pton' [-Werror=implicit-function-declaration]",
+        "/root/RIOT/examples/LLM_Gen/main.c:12:22: error: 'gw' defined but not used [-Werror=unused-variable]"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to an MQTT-SN broker at\u00a047.102.103.1:1883\u00a0to publish state (\u201dwork or not work\u201d) every five seconds. To reduce energy, you must use emcute lib."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: ['/root/RIOT/examples/LLM_Gen/main.c:5:10: fatal error: emcute.h: No such file or directory'] and Invoke the code tool to solve the error and structure the output with a prefix and code block. "
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <xtimer.h>\n#include <net/sock/udp.h>\n#include <net/emcute.h>\n\n#define SERVER_IP \"47.102.103.1\"\n#define SERVER_PORT 1883\n#define TOPIC_NAME \"state\"\n#define MSG_INTERVAL (5 * 1000000U) /* 5 seconds in microseconds */\n\nstatic sock_udp_ep_t gw = { .family = AF_INET, .port = SERVER_PORT };\nstatic emcute_sub_t sub;\nstatic emcute_topic_t topic;\n\nstatic void _on_pub(const emcute_topic_t *topic, void *data, size_t len)\n{\n    printf(\"Received message on topic '%s' [%i]: %.*s\\n\",\n           topic->name, (int)topic->id, (int)len, (char *)data);\n}\n\nint main(void)\n{\n    sock_udp_ep_t remote = { .family = AF_INET, .port = SERVER_PORT };\n    inet_pton(AF_INET, SERVER_IP, &remote.addr.ipv4);\n\n    /* Initialize the EMCUTE thread */\n    emcute_run(0, \"RIOT-MQTT\");\n\n    /* Connect to the MQTT-SN broker */\n    int res = emcute_con(&remote, true, NULL, NULL, 0, 0);\n    if (res != EMCUTE_OK) {\n        printf(\"Error on connection: %d\\n\", res);\n        return 1;\n    }\n    printf(\"Connected to MQTT-SN broker\\n\");\n\n    /* Register the topic */\n    topic.name = TOPIC_NAME;\n    res = emcute_reg(&topic);\n    if (res != EMCUTE_OK) {\n        printf(\"Error on registering topic: %d\\n\", res);\n        return 1;\n    }\n    printf(\"Registered topic: %s with ID: %u\\n\", topic.name, topic.id);\n\n    /* Subscribe to the topic */\n    sub.topic = topic;\n    sub.cb = _on_pub;\n    res = emcute_sub(&sub, EMCUTE_QOS_0);\n    if (res != EMCUTE_OK) {\n        printf(\"Error on subscribing to topic: %d\\n\", res);\n        return 1;\n    }\n    printf(\"Subscribed to topic: %s\\n\", topic.name);\n\n    /* Publish state every 5 seconds */\n    char msg[] = \"work\";\n    while (1) {\n        res = emcute_pub(&topic, msg, sizeof(msg) - 1, EMCUTE_QOS_0);\n        if (res != EMCUTE_OK) {\n            printf(\"Error on publishing message: %d\\n\", res);\n        } else {\n            printf(\"Published message: %s\\n\", msg);\n        }\n        xtimer_usleep(MSG_INTERVAL);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 11
+}

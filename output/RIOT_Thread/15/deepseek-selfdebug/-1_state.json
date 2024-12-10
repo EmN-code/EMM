@@ -1,0 +1,18 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32, where one thread sends messages to another with different priorities. We also need to achieve inter-thread communication using\u00a0msg_t."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: [\"/root/RIOT/examples/LLM_Gen/main.c:46:9: error: 'stack_high' undeclared (first use in this function)\", \"/root/RIOT/examples/LLM_Gen/main.c:53:9: error: 'stack_low' undeclared (first use in this function)\"] and Invoke the code tool to solve the error and structure the output with a prefix and code block."
+        ]
+    ],
+    "generation": "\n#include \"thread.h\"\n#include \"msg.h\"\n#include \"xtimer.h\"\n\n#define STACK_SIZE_HIGH (THREAD_STACKSIZE_DEFAULT + 512)\n#define STACK_SIZE_LOW (THREAD_STACKSIZE_DEFAULT)\n\n#define PRIORITY_HIGH (THREAD_PRIORITY_MAIN - 1)\n#define PRIORITY_LOW (THREAD_PRIORITY_MAIN - 2)\n\nchar stack_high[STACK_SIZE_HIGH];\nchar stack_low[STACK_SIZE_LOW];\n\nkernel_pid_t pid_high, pid_low;\n\nvoid *thread_high(void *arg)\n{\n    (void)arg;\n    msg_t msg;\n\n    while (1) {\n        msg_receive(&msg);\n        printf(\"High priority thread received message: %s\\n\", (char *)msg.content.ptr);\n    }\n\n    return NULL;\n}\n\nvoid *thread_low(void *arg)\n{\n    (void)arg;\n    msg_t msg;\n    msg.content.ptr = \"Hello from low priority thread!\";\n\n    while (1) {\n        xtimer_sleep(5);\n        msg_send(&msg, pid_high);\n    }\n\n    return NULL;\n}\n\nint main(void)\n{\n    pid_high = thread_create(stack_high, STACK_SIZE_HIGH, PRIORITY_HIGH, 0, thread_high, NULL, \"high_prio\");\n    pid_low = thread_create(stack_low, STACK_SIZE_LOW, PRIORITY_LOW, 0, thread_low, NULL, \"low_prio\");\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 2
+}

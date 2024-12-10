@@ -1,0 +1,17 @@
+// FSM
+digraph {
+	START [label=START]
+	START -> THREAD_RUNNING [label="pid1 > KERNEL_PID_UNDEF && pid2 > KERNEL_PID_UNDEF"]
+	START -> ERROR [label="pid1 <= KERNEL_PID_UNDEF || pid2 <= KERNEL_PID_UNDEF"]
+	THREAD_RUNNING [label=THREAD_RUNNING]
+	THREAD_RUNNING -> CHECK_PRIORITIES [label="timer triggers every 5 sec"]
+	CHECK_PRIORITIES [label=CHECK_PRIORITIES]
+	CHECK_PRIORITIES -> SWAP_PRIORITIES [label="priority1 != PRIORITY_LOW"]
+	CHECK_PRIORITIES -> NO_ACTION [label="priority1 == PRIORITY_LOW"]
+	SWAP_PRIORITIES [label=SWAP_PRIORITIES]
+	SWAP_PRIORITIES -> THREAD_RUNNING [label="swapping priorities"]
+	NO_ACTION [label=NO_ACTION]
+	NO_ACTION -> THREAD_RUNNING [label="no priority change needed"]
+	ERROR [label=ERROR]
+	ERROR -> START [label="reInitialize attempt"]
+}

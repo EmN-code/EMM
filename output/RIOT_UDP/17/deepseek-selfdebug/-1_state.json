@@ -1,0 +1,18 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to a UDP server at\u00a0`47.102.103.1:20001`\u00a0to send device state (\u201dwork or not work\u201d) by UDP method every five seconds."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: [\"/root/RIOT/examples/LLM_Gen/main.c:15:27: error: 'SOCK_UDP_EP_ANY' undeclared (first use in this function); did you mean 'SOCK_IPV4_EP_ANY'?\", \"/root/RIOT/examples/LLM_Gen/main.c:19:9: error: implicit declaration of function 'inet_pton' [-Werror=implicit-function-declaration]\"] and Invoke the code tool to solve the error and structure the output with a prefix and code block."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include <arpa/inet.h>\n#include \"xtimer.h\"\n#include \"net/sock/udp.h\"\n\n#define SERVER_IP \"47.102.103.1\"\n#define SERVER_PORT 20001\n#define INTERVAL (5 * 1000000U)  // 5 seconds in microseconds\n\nstatic sock_udp_t sock;\nstatic sock_udp_ep_t remote = SOCK_IPV4_EP_ANY;\n\nvoid send_state(const char *state) {\n    char buf[32];\n    snprintf(buf, sizeof(buf), \"Device state: %s\", state);\n    ssize_t res = sock_udp_send(&sock, buf, strlen(buf), &remote);\n    if (res < 0) {\n        puts(\"Error sending UDP message\");\n    } else {\n        printf(\"Sent: %s\\n\", buf);\n    }\n}\n\nint main(void) {\n    // Initialize the remote endpoint\n    remote.family = AF_INET;\n    remote.port = SERVER_PORT;\n    if (inet_pton(AF_INET, SERVER_IP, &remote.addr.ipv4) <= 0) {\n        puts(\"Error converting IP address\");\n        return 1;\n    }\n\n    // Initialize the UDP socket\n    if (sock_udp_create(&sock, NULL, &remote, 0) < 0) {\n        puts(\"Error creating UDP socket\");\n        return 1;\n    }\n\n    while (1) {\n        send_state(\"work\");\n        xtimer_usleep(INTERVAL);\n        send_state(\"not work\");\n        xtimer_usleep(INTERVAL);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 11
+}

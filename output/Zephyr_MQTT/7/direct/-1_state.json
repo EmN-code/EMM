@@ -1,0 +1,16 @@
+{
+    "error": [
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:2:10: fatal error: zephyr.h: No such file or directory\r"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a Zephyr program for the ESP32 that connects to an MQTT broker at 47.102.103.1:1883 to publish state (\u201dwork or not work\u201d) each five seconds. Do not use emcute lib."
+        ]
+    ],
+    "generation": "\n#include <zephyr.h>\n#include <net/socket.h>\n#include <net/mqtt.h>\n#include <logging/log.h>\n#include <string.h>\n\n#define MQTT_BROKER_IP \"47.102.103.1\"\n#define MQTT_BROKER_PORT 1883\n#define MQTT_TOPIC \"device/state\"\n#define MQTT_CLIENT_ID \"esp32_client\"\n#define MQTT_USERNAME NULL\n#define MQTT_PASSWORD NULL\n\nLOG_MODULE_REGISTER(mqtt_client);\n\nstatic int mqtt_connect(struct mqtt_client *client)\n{\n    int rc;\n    struct sockaddr_in broker;\n\n    broker.sin_family = AF_INET;\n    broker.sin_port = htons(MQTT_BROKER_PORT);\n    inet_pton(AF_INET, MQTT_BROKER_IP, &broker.sin_addr);\n\n    rc = mqtt_client_connect(client, (struct sockaddr *)&broker, sizeof(broker),\n                             MQTT_CLIENT_ID, MQTT_USERNAME, MQTT_PASSWORD, NULL, NULL);\n    if (rc) {\n        LOG_ERR(\"Failed to connect to MQTT broker: %d\", rc);\n    }\n\n    return rc;\n}\n\nstatic int mqtt_publish(struct mqtt_client *client, const char *topic, const char *payload)\n{\n    int rc;\n    struct mqtt_publish_param param;\n\n    param.message.topic.topic.utf8 = topic;\n    param.message.topic.topic.size = strlen(topic);\n    param.message.payload.data = payload;\n    param.message.payload.len = strlen(payload);\n    param.message_id = 0;\n    param.dup_flag = 0;\n    param.retain_flag = 0;\n    param.qos = MQTT_QOS_1_AT_LEAST_ONCE;\n\n    rc = mqtt_publish(client, &param);\n    if (rc) {\n        LOG_ERR(\"Failed to publish message: %d\", rc);\n    }\n\n    return rc;\n}\n\nvoid main(void)\n{\n    struct mqtt_client client;\n    mqtt_client_init(&client);\n\n    if (mqtt_connect(&client) != 0) {\n        return;\n    }\n\n    while (1) {\n        const char *state = (k_uptime_get() % 10000 < 5000) ? \"work\" : \"not work\";\n        mqtt_publish(&client, MQTT_TOPIC, state);\n        k_sleep(K_SECONDS(5));\n    }\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

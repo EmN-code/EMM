@@ -1,0 +1,18 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32 to achieve interrupt handling. The program uses atomic variables to verify if disabling and restoring interrupts works correctly. You should use irq but not use gpio interface. "
+        ],
+        [
+            "assistant",
+            "prefix: This code demonstrates the basic handling of interrupts using the RIOT OS on an ESP32 platform. The program starts by including the necessary header file for interrupt functions. It defines a global volatile atomic variable 'irq_state' to store the state of interrupts. The main logic checks the status of the interrupts (enabled or disabled) using the function 'irq_is_enabled'. The program first checks the initial status of interrupts, then disables them using 'irq_disable', and verifies the status again. Finally, it restores the interrupts to their previous state using 'irq_restore', verifying the status once more. This helps in validating if the disabling and restoring of interrupts work as expected without using the GPIO interface. \n block: #include <irq_arch.h>\n#include <stdio.h>\n\n// Global atomic variable\nvolatile unsigned irq_state;\n\n// Function to check if interrupt is enabled or disabled\nbool check_irq_status(void) {\n    return irq_is_enabled();\n}\n\n// Main function\nint main(void) {\n    printf(\"Starting Interrupt Handling Test...\\n\");\n    \n    // Initial IRQ status\n    bool is_enabled = check_irq_status();\n    printf(\"Initial IRQ Enabled: %s\\n\", is_enabled ? \"Yes\" : \"No\");\n\n    // Disable interrupts\n    irq_state = irq_disable();\n    is_enabled = check_irq_status();\n    printf(\"IRQ Enabled after disable: %s\\n\", is_enabled ? \"Yes\" : \"No\");\n\n    // Restore interrupts\n    irq_restore(irq_state);\n    is_enabled = check_irq_status();\n    printf(\"IRQ Enabled after restore: %s\\n\", is_enabled ? \"Yes\" : \"No\");\n\n    return 0;\n} \n"
+        ]
+    ],
+    "generation": "#include <irq_arch.h>\n#include <stdio.h>\n\n// Global atomic variable\nvolatile unsigned irq_state;\n\n// Function to check if interrupt is enabled or disabled\nbool check_irq_status(void) {\n    return irq_is_enabled();\n}\n\n// Main function\nint main(void) {\n    printf(\"Starting Interrupt Handling Test...\\n\");\n    \n    // Initial IRQ status\n    bool is_enabled = check_irq_status();\n    printf(\"Initial IRQ Enabled: %s\\n\", is_enabled ? \"Yes\" : \"No\");\n\n    // Disable interrupts\n    irq_state = irq_disable();\n    is_enabled = check_irq_status();\n    printf(\"IRQ Enabled after disable: %s\\n\", is_enabled ? \"Yes\" : \"No\");\n\n    // Restore interrupts\n    irq_restore(irq_state);\n    is_enabled = check_irq_status();\n    printf(\"IRQ Enabled after restore: %s\\n\", is_enabled ? \"Yes\" : \"No\");\n\n    return 0;\n}",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

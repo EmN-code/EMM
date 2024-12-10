@@ -1,0 +1,26 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to an MQTT-SN broker at\u00a047.102.103.1:1883\u00a0to publish state (\u201dwork or not work\u201d) every five seconds. To reduce energy, you must use emcute lib."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: [\"/root/RIOT/examples/LLM_Gen/main.c:15:27: error: 'SOCK_IPV6_EP_ANY' undeclared here (not in a function); did you mean 'SOCK_IPV4_EP_ANY'?\", \"/root/RIOT/examples/LLM_Gen/main.c:23:9: error: implicit declaration of function 'xtimer_usleep'; did you mean 'ztimer_sleep'? [-Werror=implicit-function-declaration]\", \"/root/RIOT/examples/LLM_Gen/main.c:35:5: error: implicit declaration of function 'inet_pton' [-Werror=implicit-function-declaration]\", \"/root/RIOT/examples/LLM_Gen/main.c:53:19: error: passing argument 5 of 'thread_create' from incompatible pointer type [-Werror=incompatible-pointer-types]\"] and Invoke the code tool to solve the error and structure the output with a prefix and code block. "
+        ],
+        [
+            "user",
+            "Your answer cannot contain the provided headers and apis from blacklist!): ['stdio.h', 'string.h', 'net/emcute.h', 'net/af.h', 'net/conn/udp.h', 'net/netif.h', 'shell.h', 'thread.h', 'random_uint32', 'snprintf', 'xtimer_usleep', 'netif_iter', 'shell_run', 'thread_create']"
+        ],
+        [
+            "user",
+            "Your answer must contain all the ['thread.h', 'net/emcute.h', 'mma8x5x_regs.h', 'kernel_defines.h', 'net/gcoap.h', 'net/sock/util.h', 'arpa/inet.h', 'dht_params.h', 'mma8x5x.h', 'net/sock/udp.h', 'net/ipv6/addr.h']!"
+        ]
+    ],
+    "generation": "\n#include <thread.h>\n#include <net/emcute.h>\n#include <mma8x5x_regs.h>\n#include <kernel_defines.h>\n#include <net/gcoap.h>\n#include <net/sock/util.h>\n#include <arpa/inet.h>\n#include <dht_params.h>\n#include <mma8x5x.h>\n#include <net/sock/udp.h>\n#include <net/ipv6/addr.h>\n\n#define EMQX_SERVER_IP \"47.102.103.1\"\n#define EMQX_SERVER_PORT 1883\n#define TOPIC_NAME \"state\"\n#define MSG_CONTENT \"work or not work\"\n#define MSG_LEN (sizeof(MSG_CONTENT) - 1)\n#define FLAGS (0)  // No special flags for QoS and retain\n\nstatic emcute_topic_t topic;\nstatic sock_udp_ep_t remote;\n\nvoid publish_state(void) {\n    while (1) {\n        int res = emcute_pub(&topic, MSG_CONTENT, MSG_LEN, FLAGS);\n        if (res != EMCUTE_OK) {\n            printf(\"Failed to publish message: %d\\n\", res);\n        }\n        ztimer_sleep(ZTIMER_MSEC, 5000);  // Sleep for 5 seconds\n    }\n}\n\nint main(void) {\n    // Initialize the remote endpoint\n    remote.family = AF_INET;\n    remote.port = EMQX_SERVER_PORT;\n    if (inet_pton(AF_INET, EMQX_SERVER_IP, &remote.addr.ipv4) != 1) {\n        printf(\"Invalid IP address\\n\");\n        return 1;\n    }\n\n    // Connect to the MQTT-SN gateway\n    int res = emcute_con(&remote, true, NULL, NULL, 0, 0);\n    if (res != EMCUTE_OK) {\n        printf(\"Failed to connect to MQTT-SN gateway: %d\\n\", res);\n        return 1;\n    }\n\n    // Register the topic\n    topic.name = TOPIC_NAME;\n    res = emcute_reg(&topic);\n    if (res != EMCUTE_OK) {\n        printf(\"Failed to register topic: %d\\n\", res);\n        return 1;\n    }\n\n    // Start the publishing thread\n    thread_create(NULL, 0, THREAD_PRIORITY_MAIN - 1, THREAD_CREATE_STACKTEST,\n                  (thread_task_func_t)publish_state, NULL, \"publisher\");\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 3
+}

@@ -1,0 +1,20 @@
+{
+    "error": [
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:2:10: fatal error: zephyr.h: No such file or directory\r"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a Zephyr program for the ESP32 that connects to an MQTT broker at 47.102.103.1:1883 to publish state (\u201dwork or not work\u201d) each five seconds. Do not use emcute lib."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: ['E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:2:10: fatal error: zephyr.h: No such file or directory\\r'] and Invoke the code tool to solve the error and structure the output with a prefix and code block."
+        ]
+    ],
+    "generation": "\n#include <zephyr.h>\n#include <net/socket.h>\n#include <net/mqtt.h>\n#include <logging/log.h>\n\n#define MQTT_BROKER_ADDR \"47.102.103.1\"\n#define MQTT_BROKER_PORT 1883\n#define MQTT_TOPIC \"state\"\n#define MQTT_CLIENT_ID \"esp32_client\"\n\nLOG_MODULE_REGISTER(main);\n\nstruct mqtt_client client_ctx;\nK_THREAD_STACK_DEFINE(mqtt_thread_stack, 1024);\nstatic struct k_thread mqtt_thread_data;\n\nvoid mqtt_thread(void *arg1, void *arg2, void *arg3)\n{\n    int rc;\n    struct mqtt_publish_param param;\n    struct sockaddr_in broker;\n    struct mqtt_client_config config = {0};\n\n    broker.sin_family = AF_INET;\n    broker.sin_port = htons(MQTT_BROKER_PORT);\n    inet_pton(AF_INET, MQTT_BROKER_ADDR, &broker.sin_addr);\n\n    config.broker = &broker;\n    config.client_id.utf8 = (uint8_t *)MQTT_CLIENT_ID;\n    config.client_id.size = strlen(MQTT_CLIENT_ID);\n\n    mqtt_client_init(&client_ctx);\n    client_ctx.config = &config;\n\n    rc = mqtt_connect(&client_ctx);\n    if (rc) {\n        LOG_ERR(\"Failed to connect to MQTT broker, error: %d\", rc);\n        return;\n    }\n\n    while (1) {\n        k_sleep(K_SECONDS(5));\n\n        const char *state = (rand() % 2 == 0) ? \"work\" : \"not work\";\n        param.message.topic.topic.utf8 = (uint8_t *)MQTT_TOPIC;\n        param.message.topic.topic.size = strlen(MQTT_TOPIC);\n        param.message.payload.data = (uint8_t *)state;\n        param.message.payload.len = strlen(state);\n        param.message.dup = 0;\n        param.message.qos = MQTT_QOS_1_AT_LEAST_ONCE;\n        param.message.retain = 0;\n\n        rc = mqtt_publish(&client_ctx, &param);\n        if (rc) {\n            LOG_ERR(\"Failed to publish message, error: %d\", rc);\n        } else {\n            LOG_INF(\"Published state: %s\", state);\n        }\n    }\n}\n\nint main(void)\n{\n    k_thread_create(&mqtt_thread_data, mqtt_thread_stack,\n                    K_THREAD_STACK_SIZEOF(mqtt_thread_stack),\n                    mqtt_thread, NULL, NULL, NULL,\n                    K_PRIO_COOP(7), 0, K_NO_WAIT);\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 11
+}

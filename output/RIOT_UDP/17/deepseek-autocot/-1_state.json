@@ -1,0 +1,16 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:14:5: error: implicit declaration of function 'inet_addr_from_str'; did you mean 'ipv6_addr_from_str'? [-Werror=implicit-function-declaration]"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to a UDP server at\u00a0`47.102.103.1:20001`\u00a0to send device state (\u201dwork or not work\u201d) by UDP method every five seconds."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include <xtimer.h>\n#include <net/sock/udp.h>\n\n#define SERVER_IP \"47.102.103.1\"\n#define SERVER_PORT 20001\n#define DEVICE_STATE \"work\"  // or \"not work\"\n#define INTERVAL_MS (5 * 1000000U)  // 5 seconds in microseconds\n\nstatic void send_state(void) {\n    sock_udp_ep_t remote = { .family = AF_INET, .port = SERVER_PORT };\n    inet_addr_from_str((struct in_addr *)&remote.addr.ipv4, SERVER_IP);\n\n    char buf[32];\n    snprintf(buf, sizeof(buf), \"Device state: %s\", DEVICE_STATE);\n\n    sock_udp_t sock;\n    sock_udp_create(&sock, NULL, &remote, 0);\n    sock_udp_send(&sock, buf, strlen(buf), NULL);\n    sock_udp_close(&sock);\n}\n\nint main(void) {\n    while (1) {\n        send_state();\n        xtimer_usleep(INTERVAL_MS);\n    }\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

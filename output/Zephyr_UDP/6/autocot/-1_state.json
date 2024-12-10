@@ -1,0 +1,14 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a Zephyr program for the ESP32 that connects to a UDP server at `47.102.103.1:20001` to send device state (\u201dwork or not work\u201d) by UDP method every five seconds."
+        ]
+    ],
+    "generation": "\n#include <zephyr/kernel.h>\n#include <zephyr/net/socket.h>\n#include <zephyr/device.h>\n#include <zephyr/drivers/gpio.h>\n#include <zephyr/logging/log.h>\n\n#define UDP_SERVER_IP \"47.102.103.1\"\n#define UDP_SERVER_PORT 20001\n#define DEVICE_STATE_MSG \"work\"\n#define DEVICE_NOT_WORK_MSG \"not work\"\n#define SEND_INTERVAL_SECONDS 5\n\nLOG_MODULE_REGISTER(udp_client);\n\nstatic int create_udp_socket(void)\n{\n    int sock;\n    struct sockaddr_in server_addr;\n\n    sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);\n    if (sock < 0) {\n        LOG_ERR(\"Failed to create UDP socket\");\n        return -1;\n    }\n\n    server_addr.sin_family = AF_INET;\n    server_addr.sin_port = htons(UDP_SERVER_PORT);\n    inet_pton(AF_INET, UDP_SERVER_IP, &server_addr.sin_addr);\n\n    if (connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {\n        LOG_ERR(\"Failed to connect to UDP server\");\n        close(sock);\n        return -1;\n    }\n\n    return sock;\n}\n\nstatic void send_device_state(int sock, const char *state)\n{\n    ssize_t len;\n\n    len = send(sock, state, strlen(state), 0);\n    if (len < 0) {\n        LOG_ERR(\"Failed to send device state\");\n    } else {\n        LOG_INF(\"Sent device state: %s\", state);\n    }\n}\n\nint main(void)\n{\n    int sock;\n    bool device_working = true; // Simulate device state\n\n    LOG_INF(\"Starting UDP client\");\n\n    sock = create_udp_socket();\n    if (sock < 0) {\n        return -1;\n    }\n\n    while (1) {\n        if (device_working) {\n            send_device_state(sock, DEVICE_STATE_MSG);\n        } else {\n            send_device_state(sock, DEVICE_NOT_WORK_MSG);\n        }\n\n        device_working = !device_working; // Toggle device state\n\n        k_sleep(K_SECONDS(SEND_INTERVAL_SECONDS));\n    }\n\n    close(sock);\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

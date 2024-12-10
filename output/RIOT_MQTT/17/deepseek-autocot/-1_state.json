@@ -1,0 +1,16 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:6:10: fatal error: net/mqtt.h: No such file or directory"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to an MQTT broker at\u00a047.102.103.1:1883\u00a0to publish state (\u201dwork or not work\u201d) each five seconds. Do not use emcute lib."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include <xtimer.h>\n#include <net/sock.h>\n#include <net/mqtt.h>\n#include <net/netif.h>\n#include <net/af.h>\n\n#define BROKER_IP \"47.102.103.1\"\n#define BROKER_PORT 1883\n#define TOPIC \"state\"\n#define PAYLOAD_WORK \"work\"\n#define PAYLOAD_NOT_WORK \"not work\"\n#define INTERVAL (5 * 1000000U) // 5 seconds in microseconds\n\nstatic sock_tcp_t sock;\nstatic mqtt_client_t client;\nstatic char sendbuf[128];\nstatic char readbuf[128];\n\nstatic void _mqtt_connect(void)\n{\n    sock_tcp_ep_t local = SOCK_IPV4_EP_ANY;\n    sock_tcp_ep_t remote = { .family = AF_INET, .port = BROKER_PORT };\n    inet_pton(AF_INET, BROKER_IP, &remote.addr.ipv4);\n\n    sock_tcp_create(&sock, &local, &remote, 0);\n    mqtt_client_init(&client, &sock, sendbuf, sizeof(sendbuf), readbuf, sizeof(readbuf), NULL);\n\n    mqtt_connect_t conn = {\n        .keep_alive = 60,\n        .clean_session = 1,\n        .client_id = \"riot_esp32\",\n    };\n\n    mqtt_connect(&client, &conn);\n}\n\nstatic void _mqtt_publish(const char *payload)\n{\n    mqtt_publish_t pub = {\n        .topic = TOPIC,\n        .payload = payload,\n        .payload_len = strlen(payload),\n        .qos = MQTT_QOS_0,\n        .retain = 0,\n    };\n\n    mqtt_publish(&client, &pub);\n}\n\nint main(void)\n{\n    _mqtt_connect();\n\n    bool state = true;\n\n    while (1) {\n        if (state) {\n            _mqtt_publish(PAYLOAD_WORK);\n        } else {\n            _mqtt_publish(PAYLOAD_NOT_WORK);\n        }\n\n        state = !state;\n        xtimer_usleep(INTERVAL);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

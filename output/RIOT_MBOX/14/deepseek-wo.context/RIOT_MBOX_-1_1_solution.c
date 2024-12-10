@@ -1,0 +1,63 @@
+
+#include "msg.h"
+#include "thread.h"
+#include "xtimer.h"
+#include "mbox.h"
+
+#define MSG_QUEUE_SIZE 10
+#define INTERVAL_MS 1000
+
+static mbox_t msg_box;
+static msg_t msg_queue[MSG_QUEUE_SIZE];
+
+static void *sender_thread(void *arg)
+{
+    (void)arg;
+    msg_t msg;
+
+    while (1) {
+        msg.content.value = 0x1234; // Example message content
+        msg_send(&msg, &msg_box);
+        xtimer_sleep(INTERVAL_MS / 1000);
+    }
+
+    return NULL;
+}
+
+static void *receiver_thread(void *arg)
+{
+    (void)arg;
+    msg_t msg;
+
+    while (1) {
+        msg_receive(&msg);
+        printf("Received message with value: %d\n", (int)msg.content.value);
+    }
+
+    return NULL;
+}
+
+int main(void)
+{
+    mbox_init(&msg_box, msg_queue, MSG_QUEUE_SIZE);
+
+    thread_create(
+        NULL,
+        THREAD_STACKSIZE_DEFAULT,
+        THREAD_PRIORITY_MAIN - 1,
+        THREAD_CREATE_STACKTEST,
+        sender_thread,
+        NULL,
+        "sender");
+
+    thread_create(
+        NULL,
+        THREAD_STACKSIZE_DEFAULT,
+        THREAD_PRIORITY_MAIN - 1,
+        THREAD_CREATE_STACKTEST,
+        receiver_thread,
+        NULL,
+        "receiver");
+
+    return 0;
+}

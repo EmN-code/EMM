@@ -1,0 +1,18 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:17:53: error: 'sched_active_thread' undeclared (first use in this function); did you mean 'sched_num_threads'?",
+        "/root/RIOT/examples/LLM_Gen/main.c:27:53: error: 'sched_active_thread' undeclared (first use in this function); did you mean 'sched_num_threads'?",
+        "/root/RIOT/examples/LLM_Gen/main.c:47:5: error: implicit declaration of function 'thread_change_priority'; did you mean 'sched_change_priority'? [-Werror=implicit-function-declaration]"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32. It starts two threads and change priority at runtime."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include \"thread.h\"\n#include \"xtimer.h\"\n\n#define THREAD_STACKSIZE 512\n\nchar thread_stack1[THREAD_STACKSIZE];\nchar thread_stack2[THREAD_STACKSIZE];\n\nkernel_pid_t thread_id1, thread_id2;\n\nvoid *thread_func1(void *arg)\n{\n    (void)arg;\n    while (1) {\n        printf(\"Thread 1 running at priority %d\\n\", sched_active_thread->priority);\n        xtimer_sleep(2);\n    }\n    return NULL;\n}\n\nvoid *thread_func2(void *arg)\n{\n    (void)arg;\n    while (1) {\n        printf(\"Thread 2 running at priority %d\\n\", sched_active_thread->priority);\n        xtimer_sleep(2);\n    }\n    return NULL;\n}\n\nint main(void)\n{\n    puts(\"RIOT application starting on ESP32\");\n\n    // Create the first thread with priority 3\n    thread_id1 = thread_create(thread_stack1, sizeof(thread_stack1), 3,\n                               THREAD_CREATE_STACKTEST, thread_func1, NULL, \"thread1\");\n\n    // Create the second thread with priority 4\n    thread_id2 = thread_create(thread_stack2, sizeof(thread_stack2), 4,\n                               THREAD_CREATE_STACKTEST, thread_func2, NULL, \"thread2\");\n\n    // Change the priority of thread 1 to 5 after 10 seconds\n    xtimer_sleep(10);\n    thread_change_priority(thread_id1, 5);\n    printf(\"Changed priority of thread 1 to 5\\n\");\n\n    // Change the priority of thread 2 to 2 after 20 seconds\n    xtimer_sleep(10);\n    thread_change_priority(thread_id2, 2);\n    printf(\"Changed priority of thread 2 to 2\\n\");\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

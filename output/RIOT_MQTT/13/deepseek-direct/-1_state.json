@@ -1,0 +1,16 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:5:10: fatal error: net/socket.h: No such file or directory"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to an MQTT broker at\u00a047.102.103.1:1883\u00a0to publish state (\u201dwork or not work\u201d) each five seconds. Do not use emcute lib."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include <xtimer.h>\n#include <net/socket.h>\n#include <net/conn/tcp.h>\n\n#define MQTT_BROKER_IP \"47.102.103.1\"\n#define MQTT_BROKER_PORT 1883\n#define MQTT_TOPIC \"device/state\"\n#define MQTT_QOS 0\n#define MQTT_KEEPALIVE 60\n#define MQTT_CLIENT_ID \"esp32_client\"\n\n#define PAYLOAD_WORK \"work\"\n#define PAYLOAD_NOT_WORK \"not work\"\n\nstatic int mqtt_connect(int *sock) {\n    struct sockaddr_in server_addr;\n    server_addr.sin_family = AF_INET;\n    server_addr.sin_port = htons(MQTT_BROKER_PORT);\n    inet_aton(MQTT_BROKER_IP, &server_addr.sin_addr);\n\n    *sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);\n    if (*sock < 0) {\n        printf(\"Failed to create socket\\n\");\n        return -1;\n    }\n\n    if (connect(*sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {\n        printf(\"Failed to connect to MQTT broker\\n\");\n        return -1;\n    }\n\n    return 0;\n}\n\nstatic void mqtt_publish(int sock, const char *topic, const char *payload) {\n    uint8_t mqtt_packet[128];\n    uint8_t *ptr = mqtt_packet;\n    uint16_t len = 0;\n\n    // Fixed header\n    *ptr++ = 0x30; // MQTT PUBLISH packet\n    len = strlen(topic) + strlen(payload) + 2;\n    *ptr++ = len;\n\n    // Variable header\n    *ptr++ = (uint8_t)(strlen(topic) >> 8);\n    *ptr++ = (uint8_t)(strlen(topic) & 0xFF);\n    memcpy(ptr, topic, strlen(topic));\n    ptr += strlen(topic);\n\n    // Payload\n    memcpy(ptr, payload, strlen(payload));\n\n    send(sock, mqtt_packet, ptr - mqtt_packet + strlen(payload), 0);\n}\n\nint main(void) {\n    int sock;\n    bool state = true;\n\n    if (mqtt_connect(&sock) < 0) {\n        return -1;\n    }\n\n    while (1) {\n        const char *payload = state ? PAYLOAD_WORK : PAYLOAD_NOT_WORK;\n        mqtt_publish(sock, MQTT_TOPIC, payload);\n        printf(\"Published: %s\\n\", payload);\n\n        state = !state;\n        xtimer_sleep(5);\n    }\n\n    close(sock);\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

@@ -1,0 +1,20 @@
+{
+    "error": [
+        "hello-world.c:4:10: fatal error: xtimer.h: No such file or directory"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a Contiki program for the NRF52840 that connects to an MQTT broker at 47.102.103.1:1883 to publish state (\u201dwork or not work\u201d) each five seconds."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: ['hello-world.c:5:10: fatal error: net/mqtt.h: No such file or directory'] and Invoke the code tool to solve the error and structure the output with a prefix and code block."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include <xtimer.h>\n#include \"net/mqtt.h\"\n#include \"net/sock/tcp.h\"\n\n#define BROKER_HOST \"47.102.103.1\"\n#define BROKER_PORT 1883\n#define TOPIC \"state\"\n#define PAYLOAD_WORK \"work\"\n#define PAYLOAD_NOT_WORK \"not work\"\n#define INTERVAL (5 * 1000000U)  // 5 seconds in microseconds\n\nstatic struct mqtt_connection conn;\nstatic uint8_t payload[10];\n\nvoid publish_state(void)\n{\n    static int state = 0;\n    if (state) {\n        strcpy((char *)payload, PAYLOAD_WORK);\n    } else {\n        strcpy((char *)payload, PAYLOAD_NOT_WORK);\n    }\n    state = !state;\n\n    mqtt_publish(&conn, NULL, TOPIC, payload, strlen((char *)payload), MQTT_QOS_0, MQTT_RETAIN_OFF, 0, MQTT_TOPIC_ALIAS_EN_OFF, NULL);\n}\n\nint main(void)\n{\n    sock_tcp_ep_t broker = { .family = AF_INET, .port = BROKER_PORT };\n    inet_pton(AF_INET, BROKER_HOST, &broker.addr.ipv4);\n\n    mqtt_connect(&conn, (char *)BROKER_HOST, BROKER_PORT, 60, MQTT_CLEAN_SESSION_ON, NULL);\n\n    while (1) {\n        publish_state();\n        xtimer_usleep(INTERVAL);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 11
+}

@@ -1,0 +1,16 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:6:10: fatal error: net/conn/udp.h: No such file or directory"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to an MQTT broker at\u00a047.102.103.1:1883\u00a0to publish state (\u201dwork or not work\u201d) each five seconds. Do not use emcute lib."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include <xtimer.h>\n#include <net/sock.h>\n#include <net/conn/udp.h>\n#include <net/conn/tcp.h>\n#include <net/conn/mqtt.h>\n\n#define MQTT_BROKER_IP \"47.102.103.1\"\n#define MQTT_BROKER_PORT 1883\n#define MQTT_TOPIC \"state\"\n#define MQTT_CLIENT_ID \"esp32_client\"\n#define MQTT_MESSAGE \"work\"\n#define PUBLISH_INTERVAL (5 * 1000000U) // 5 seconds in microseconds\n\nstatic void mqtt_connect(mqtt_client_t *client, const char *broker_ip, uint16_t broker_port)\n{\n    mqtt_connect_info_t conn_info = {\n        .client_id = MQTT_CLIENT_ID,\n        .keep_alive = 60,\n        .clean_session = 1,\n        .will_topic = NULL,\n        .will_message = NULL,\n        .will_qos = 0,\n        .will_retain = 0,\n        .username = NULL,\n        .password = NULL\n    };\n\n    mqtt_network_t network;\n    mqtt_network_init(&network);\n    mqtt_network_connect(&network, broker_ip, broker_port);\n    mqtt_client_init(client, &network, 1024, NULL, NULL);\n    mqtt_client_connect(client, &conn_info);\n}\n\nstatic void mqtt_publish(mqtt_client_t *client, const char *topic, const char *message)\n{\n    mqtt_message_t msg;\n    msg.topic = topic;\n    msg.payload = (void *)message;\n    msg.payload_len = strlen(message);\n    msg.qos = 0;\n    msg.retain = 0;\n\n    mqtt_client_publish(client, &msg);\n}\n\nint main(void)\n{\n    mqtt_client_t client;\n\n    puts(\"Connecting to MQTT broker...\");\n    mqtt_connect(&client, MQTT_BROKER_IP, MQTT_BROKER_PORT);\n\n    while (1) {\n        puts(\"Publishing state...\");\n        mqtt_publish(&client, MQTT_TOPIC, MQTT_MESSAGE);\n        xtimer_usleep(PUBLISH_INTERVAL);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

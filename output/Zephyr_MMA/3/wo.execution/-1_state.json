@@ -1,0 +1,14 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop Zephyr code on an ESP32. It read MMA8x5x every 5 seconds."
+        ]
+    ],
+    "generation": "\n#include <zephyr/kernel.h>\n#include <zephyr/device.h>\n#include <zephyr/drivers/sensor.h>\n#include <zephyr/sys/printk.h>\n\n#define SLEEP_DURATION_SECONDS 5\n\nvoid main(void) {\n    const struct device *dev;\n    struct sensor_value accel[3];\n\n    // Get the device for the MMA8x5x sensor\n    dev = device_get_binding(\"MMA8x5x\");\n    if (dev == NULL) {\n        printk(\"Device MMA8x5x not found\\n\");\n        return;\n    }\n\n    // Check if the device is ready\n    if (!device_is_ready(dev)) {\n        printk(\"Device MMA8x5x is not ready\\n\");\n        return;\n    }\n\n    while (1) {\n        // Fetch the sensor data\n        if (sensor_sample_fetch(dev) < 0) {\n            printk(\"Failed to fetch sample\\n\");\n        } else {\n            // Read the accelerometer data\n            sensor_channel_get(dev, SENSOR_CHAN_ACCEL_XYZ, accel);\n\n            // Print the accelerometer data\n            printk(\"Accel X: %d.%06d m/s^2\\n\", accel[0].val1, accel[0].val2);\n            printk(\"Accel Y: %d.%06d m/s^2\\n\", accel[1].val1, accel[1].val2);\n            printk(\"Accel Z: %d.%06d m/s^2\\n\", accel[2].val1, accel[2].val2);\n        }\n\n        // Sleep for 5 seconds\n        k_sleep(K_SECONDS(SLEEP_DURATION_SECONDS));\n    }\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

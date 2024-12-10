@@ -1,0 +1,17 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:39:5: error: implicit declaration of function 'log_init'; did you mean '_lock_init'? [-Werror=implicit-function-declaration]",
+        "/root/RIOT/examples/LLM_Gen/main.c:52:5: error: implicit declaration of function 'thread_change_priority'; did you mean 'sched_change_priority'? [-Werror=implicit-function-declaration]"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32. It starts two threads and change priority at runtime."
+        ]
+    ],
+    "generation": "\n#include \"thread.h\"\n#include \"xtimer.h\"\n#include \"periph/gpio.h\"\n#include \"log.h\"\n\n#define THREAD_STACKSIZE 512\n#define THREAD_PRIORITY_HIGH 5\n#define THREAD_PRIORITY_LOW 10\n\nstatic char stack_high[THREAD_STACKSIZE];\nstatic char stack_low[THREAD_STACKSIZE];\n\nstatic kernel_pid_t pid_high, pid_low;\n\nvoid *thread_high(void *arg)\n{\n    (void)arg;\n    while (1) {\n        LOG_INFO(\"High priority thread running\\n\");\n        xtimer_sleep(1);\n    }\n    return NULL;\n}\n\nvoid *thread_low(void *arg)\n{\n    (void)arg;\n    while (1) {\n        LOG_INFO(\"Low priority thread running\\n\");\n        xtimer_sleep(1);\n    }\n    return NULL;\n}\n\nint main(void)\n{\n    // Initialize the logging system\n    log_init();\n\n    // Create high priority thread\n    pid_high = thread_create(stack_high, sizeof(stack_high),\n                             THREAD_PRIORITY_HIGH, THREAD_CREATE_WOUT_YIELD,\n                             thread_high, NULL, \"high\");\n\n    // Create low priority thread\n    pid_low = thread_create(stack_low, sizeof(stack_low),\n                            THREAD_PRIORITY_LOW, THREAD_CREATE_WOUT_YIELD,\n                            thread_low, NULL, \"low\");\n\n    // Change priority of low priority thread to high at runtime\n    thread_change_priority(pid_low, THREAD_PRIORITY_HIGH);\n\n    // Change priority of high priority thread to low at runtime\n    thread_change_priority(pid_high, THREAD_PRIORITY_LOW);\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

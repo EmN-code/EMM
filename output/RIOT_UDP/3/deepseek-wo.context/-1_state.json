@@ -1,0 +1,18 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to a UDP server at\u00a0`47.102.103.1:20001`\u00a0to send device state (\u201dwork or not work\u201d) by UDP method every five seconds."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: [\"/root/RIOT/examples/LLM_Gen/main.c:33:9: error: implicit declaration of function 'inet_pton' [-Werror=implicit-function-declaration]\"] and Invoke the code tool to solve the error and structure the output with a prefix and code block. "
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include <arpa/inet.h>  // Include this header for inet_pton\n#include \"xtimer.h\"\n#include \"net/sock/udp.h\"\n\n#define SERVER_IP \"47.102.103.1\"\n#define SERVER_PORT 20001\n#define DELAY_MS (5 * 1000000U)  // 5 seconds in microseconds\n\nstatic void send_state(sock_udp_t *sock, const char *state) {\n    sock_udp_ep_t remote = { .family = AF_INET };\n    inet_pton(AF_INET, SERVER_IP, &remote.addr.ipv4);\n    remote.port = SERVER_PORT;\n\n    ssize_t res = sock_udp_send(sock, state, strlen(state), &remote);\n    if (res < 0) {\n        puts(\"Error sending UDP message\");\n    } else {\n        printf(\"Sent state: %s\\n\", state);\n    }\n}\n\nint main(void) {\n    sock_udp_t sock;\n    sock_udp_ep_t local = SOCK_IPV4_EP_ANY;\n    local.port = 0;  // Use any available local port\n\n    if (sock_udp_create(&sock, &local, NULL, 0) < 0) {\n        puts(\"Error creating UDP socket\");\n        return 1;\n    }\n\n    while (1) {\n        send_state(&sock, \"work\");\n        xtimer_usleep(DELAY_MS);\n        send_state(&sock, \"not work\");\n        xtimer_usleep(DELAY_MS);\n    }\n\n    sock_udp_close(&sock);\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 3
+}

@@ -1,0 +1,16 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:36:63: error: format '%d' expects argument of type 'int', but argument 2 has type 'uint32_t' {aka 'long unsigned int'} [-Werror=format=]"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32, where one thread sends messages to another with different priorities. We also need to achieve inter-thread communication using\u00a0msg_t."
+        ]
+    ],
+    "generation": "\n#include \"thread.h\"\n#include \"msg.h\"\n#include \"xtimer.h\"\n#include \"periph/gpio.h\"\n\n#define MSG_QUEUE_SIZE 10\n#define HIGH_PRIORITY 7\n#define LOW_PRIORITY 3\n\nstatic char stack_high[THREAD_STACKSIZE_DEFAULT];\nstatic char stack_low[THREAD_STACKSIZE_DEFAULT];\n\nstatic msg_t msg_queue[MSG_QUEUE_SIZE];\n\nvoid *high_priority_thread(void *arg)\n{\n    (void)arg;\n    msg_t msg;\n\n    while (1) {\n        msg_receive(&msg);\n        printf(\"High priority thread received message: %s\\n\", (char *)msg.content.ptr);\n    }\n\n    return NULL;\n}\n\nvoid *low_priority_thread(void *arg)\n{\n    (void)arg;\n    msg_t msg;\n\n    while (1) {\n        msg_receive(&msg);\n        printf(\"Low priority thread received message: %s\\n\", (char *)msg.content.ptr);\n    }\n\n    return NULL;\n}\n\nint main(void)\n{\n    msg_init_queue(msg_queue, MSG_QUEUE_SIZE);\n\n    thread_create(stack_high, sizeof(stack_high), HIGH_PRIORITY, THREAD_CREATE_STACKTEST, high_priority_thread, NULL, \"high_priority\");\n    thread_create(stack_low, sizeof(stack_low), LOW_PRIORITY, THREAD_CREATE_STACKTEST, low_priority_thread, NULL, \"low_priority\");\n\n    msg_t msg;\n    msg.type = 0;\n\n    while (1) {\n        msg.content.ptr = \"Message for high priority thread\";\n        msg_send(&msg, thread_getpid(high_priority_thread));\n\n        xtimer_sleep(1);\n\n        msg.content.ptr = \"Message for low priority thread\";\n        msg_send(&msg, thread_getpid(low_priority_thread));\n\n        xtimer_sleep(1);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

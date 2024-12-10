@@ -1,0 +1,20 @@
+{
+    "error": [
+        "hello-world.c:2:10: fatal error: xtimer.h: No such file or directory"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop Contiki code on an NRF52840. It read dht11 each five seconds. The dht11 connects to gpio 2."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: ['hello-world.c:3:10: fatal error: xtimer.h: No such file or directory'] and Invoke the code tool to solve the error and structure the output with a prefix and code block."
+        ]
+    ],
+    "generation": "\n#include \"xtimer.h\"\n#include \"periph/gpio.h\"\n#include \"dht11.h\"\n\n#define DHT11_PIN GPIO_PIN(0, 2)\n\nint main(void)\n{\n    dht11_t dev;\n    int16_t temp, hum;\n\n    if (dht11_init(&dev, DHT11_PIN) == DHT11_OK) {\n        while (1) {\n            if (dht11_read(&dev, &temp, &hum) == DHT11_OK) {\n                printf(\"Temperature: %d.%d\u00b0C, Humidity: %d.%d%%\\n\",\n                       temp / 10, temp % 10, hum / 10, hum % 10);\n            } else {\n                printf(\"Failed to read from DHT11 sensor\\n\");\n            }\n            xtimer_sleep(5);\n        }\n    } else {\n        printf(\"Failed to initialize DHT11 sensor\\n\");\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 11
+}

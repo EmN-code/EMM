@@ -1,0 +1,18 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32, where one thread sends messages to another with different priorities. We also need to achieve inter-thread communication using\u00a0msg_t."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: [\"/root/RIOT/examples/LLM_Gen/main.c:39:47: error: format '%d' expects argument of type 'int', but argument 2 has type 'uint32_t' {aka 'long unsigned int'} [-Werror=format=]\", \"/root/RIOT/examples/LLM_Gen/main.c:52:9: error: 'stack_buffer' undeclared (first use in this function)\"] and Invoke the code tool to solve the error and structure the output with a prefix and code block. "
+        ]
+    ],
+    "generation": "\n#include \"thread.h\"\n#include \"msg.h\"\n#include \"xtimer.h\"\n#include \"periph/gpio.h\"\n\n#define THREAD_PRIORITY_HIGH (THREAD_PRIORITY_MAIN - 1)\n#define THREAD_PRIORITY_LOW (THREAD_PRIORITY_MAIN + 1)\n#define STACKSIZE (THREAD_STACKSIZE_DEFAULT)\n\nkernel_pid_t high_prio_pid;\nkernel_pid_t low_prio_pid;\n\nchar high_prio_stack[STACKSIZE];\nchar low_prio_stack[STACKSIZE];\n\nvoid *high_prio_thread(void *arg)\n{\n    (void)arg;\n    msg_t msg;\n\n    while (1) {\n        msg_receive(&msg);\n        printf(\"High priority thread received message: %\" PRIu32 \"\\n\", (uint32_t)msg.content.value);\n    }\n\n    return NULL;\n}\n\nvoid *low_prio_thread(void *arg)\n{\n    (void)arg;\n    msg_t msg;\n\n    while (1) {\n        msg_receive(&msg);\n        printf(\"Low priority thread received message: %\" PRIu32 \"\\n\", (uint32_t)msg.content.value);\n    }\n\n    return NULL;\n}\n\nint main(void)\n{\n    msg_t msg;\n\n    high_prio_pid = thread_create(high_prio_stack, sizeof(high_prio_stack), THREAD_PRIORITY_HIGH,\n                                  THREAD_CREATE_STACKTEST, high_prio_thread, NULL, \"high_prio\");\n\n    low_prio_pid = thread_create(low_prio_stack, sizeof(low_prio_stack), THREAD_PRIORITY_LOW,\n                                 THREAD_CREATE_STACKTEST, low_prio_thread, NULL, \"low_prio\");\n\n    msg.type = 0;\n    msg.content.value = 12345;\n\n    msg_send(&msg, high_prio_pid);\n    msg_send(&msg, low_prio_pid);\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 2
+}

@@ -1,0 +1,24 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:6:10: fatal error: net/mqtt.h: No such file or directory"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to an MQTT broker at\u00a047.102.103.1:1883\u00a0to publish state (\u201dwork or not work\u201d) each five seconds. Do not use emcute lib."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: ['/root/RIOT/examples/LLM_Gen/main.c:6:10: fatal error: net/mqtt.h: No such file or directory'] and Invoke the code tool to solve the error and structure the output with a prefix and code block. "
+        ],
+        [
+            "user",
+            "Note: you must ensure that 'MQTTClient.h' is the last header file to be included, if it needs to be used."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include <xtimer.h>\n#include <net/sock.h>\n#include <net/mqtt.h>\n#include \"MQTTClient.h\"\n\n#define SERVER_IP \"47.102.103.1\"\n#define SERVER_PORT 1883\n#define TOPIC \"state\"\n#define PAYLOAD \"work\"\n#define PAYLOAD_LEN 4\n#define INTERVAL (5 * 1000000U)  // 5 seconds in microseconds\n\nstatic Network network;\nstatic MQTTClient client;\n\nvoid messageArrived(MessageData* data) {\n    (void)data;\n}\n\nint main(void) {\n    // Initialize the network\n    NetworkInit(&network);\n\n    // Connect to the MQTT broker\n    if (NetworkConnect(&network, SERVER_IP, SERVER_PORT) != 0) {\n        puts(\"Failed to connect to MQTT broker\");\n        return 1;\n    }\n\n    // Initialize the MQTT client\n    MQTTClientInit(&client, &network, 1000, NULL, 0, NULL, 0);\n\n    // Set the message handler\n    MQTTSetMessageHandler(&client, TOPIC, messageArrived);\n\n    // Connect to the MQTT broker\n    MQTTPacket_connectData options = MQTTPacket_connectData_initializer;\n    options.clientID.cstring = \"riot_esp32\";\n    options.keepAliveInterval = 20;\n    options.cleansession = 1;\n\n    if (MQTTConnect(&client, &options) != 0) {\n        puts(\"Failed to connect to MQTT broker\");\n        return 1;\n    }\n\n    // Publish state every 5 seconds\n    while (1) {\n        MQTTMessage message;\n        message.qos = 0;\n        message.retained = 0;\n        message.dup = 0;\n        message.payload = (void*)PAYLOAD;\n        message.payloadlen = PAYLOAD_LEN;\n\n        if (MQTTPublish(&client, TOPIC, &message) != 0) {\n            puts(\"Failed to publish message\");\n        }\n\n        xtimer_usleep(INTERVAL);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 11
+}

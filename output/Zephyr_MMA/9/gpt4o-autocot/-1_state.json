@@ -1,0 +1,20 @@
+{
+    "error": [
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:17:20: error: 'DT_FLASH_AREA_STORAGE_SIZE' undeclared here (not in a function)",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:18:21: error: 'DT_FLASH_AREA_STORAGE_NUM' undeclared here (not in a function)",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:19:15: error: 'DT_FLASH_AREA_STORAGE_OFFSET' undeclared here (not in a function)",
+        "E:/local_code/IoT/zephyrproject/zephyr/include/zephyr/devicetree.h:336:40: error: 'DT_N_INST_0_nxp_mma8x5x' undeclared (first use in this function)",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:13:23: error: 'DT_FLASH_AREA_STORAGE_ID' undeclared (first use in this function)\r"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop Zephyr code on an ESP32. It read MMA8x5x every 5 seconds and uses NVS to store the reading value persistently. "
+        ]
+    ],
+    "generation": "\n#include <zephyr/kernel.h>\n#include <zephyr/device.h>\n#include <zephyr/drivers/sensor.h>\n#include <zephyr/storage/flash_map.h>\n#include <zephyr/fs/fs.h>\n#include <zephyr/fs/nvs.h>\n#include <zephyr/logging/log.h>\n\nLOG_MODULE_REGISTER(main);\n\n#define MMA8x5x_NODE DT_INST(0, nxp_mma8x5x)\n#define NVS_PARTITION DT_FLASH_AREA_STORAGE_ID\n\nstatic struct device *mma8x5x_dev;\nstatic struct nvs_fs nvs = {\n    .sector_size = DT_FLASH_AREA_STORAGE_SIZE,\n    .sector_count = DT_FLASH_AREA_STORAGE_NUM,\n    .offset = DT_FLASH_AREA_STORAGE_OFFSET,\n};\n\nvoid read_and_store_sensor_data(void)\n{\n    struct sensor_value accel[3];\n    int ret;\n\n    ret = sensor_sample_fetch(mma8x5x_dev);\n    if (ret) {\n        LOG_ERR(\"Failed to fetch sample (%d)\", ret);\n        return;\n    }\n\n    ret = sensor_channel_get(mma8x5x_dev, SENSOR_CHAN_ACCEL_XYZ, accel);\n    if (ret) {\n        LOG_ERR(\"Failed to get sensor data (%d)\", ret);\n        return;\n    }\n\n    uint32_t data = (accel[0].val1 << 16) | (accel[1].val1 << 8) | accel[2].val1;\n\n    ret = nvs_write(&nvs, 0, &data, sizeof(data));\n    if (ret < 0) {\n        LOG_ERR(\"Failed to write to NVS (%d)\", ret);\n    } else {\n        LOG_INF(\"Stored sensor data: %u\", data);\n    }\n}\n\nint main(void)\n{\n    int ret;\n\n    mma8x5x_dev = device_get_binding(DT_LABEL(MMA8x5x_NODE));\n    if (!mma8x5x_dev) {\n        LOG_ERR(\"Could not get MMA8x5x device\");\n        return -ENODEV;\n    }\n\n    ret = nvs_init(&nvs, DT_LABEL(NVS_PARTITION));\n    if (ret) {\n        LOG_ERR(\"NVS init failed (%d)\", ret);\n        return -EIO;\n    }\n\n    while (1) {\n        read_and_store_sensor_data();\n        k_sleep(K_SECONDS(5));\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

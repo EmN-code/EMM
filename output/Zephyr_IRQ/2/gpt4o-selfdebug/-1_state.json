@@ -1,0 +1,22 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop Zephyr code on an ESP32 to achieve interrupt handling. The program uses atomic variables to verify if disabling and restoring interrupts works correctly. You should use irq but not use gpio interface. "
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: ['E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:6:10: fatal error: zephyr.h: No such file or directory\\r'] and Invoke the code tool to solve the error and structure the output with a prefix and code block."
+        ],
+        [
+            "assistant",
+            "prefix: The issue with the error message 'fatal error: zephyr.h: No such file or directory' suggests that the file 'zephyr.h' was not found at the specified path. To solve this, we need to ensure that the necessary Zephyr header files are correctly included, focusing on kernel, device, irq, and types management. This code sets up a dummy interrupt handler and uses atomic operations to verify interrupts handling with atomic variables on the ESP32 microcontroller platform. The irq_lock and irq_unlock functions are used to disable and restore interrupts safely without using any GPIO interfaces. \n block: #include <zephyr/kernel.h>\n#include <zephyr/device.h>\n#include <zephyr/irq.h>\n#include <zephyr/types.h>\n\nstatic volatile atomic_t interrupt_counter = ATOMIC_INIT(0);\n\nvoid dummy_irq_handler(const void *param) {\n    ARG_UNUSED(param);\n    atomic_inc(&interrupt_counter);\n}\n\nint main(void) {\n    const unsigned int test_irq = 3; // Example IRQ line\n    unsigned long flags;\n\n    // Set interrupt handler\n    irq_connect_dynamic(test_irq, 0, dummy_irq_handler, NULL, 0);\n\n    // Enable the IRQ\n    irq_enable(test_irq);\n\n    // Disable interrupts and perform a critical operation\n    flags = irq_lock();\n    if (irq_is_enabled(test_irq)) {\n        printk(\"Interrupts are not properly disabled.\\n\");\n    }\n\n    // Critical section here\n\n    // Restore interrupts\n    irq_unlock(flags);\n    if (!irq_is_enabled(test_irq)) {\n        printk(\"Interrupts are not properly restored.\\n\");\n    }\n\n    printk(\"Interrupts test completed, interrupt counter: %d\\n\", atomic_get(&interrupt_counter));\n\n    return 0;\n} \n"
+        ]
+    ],
+    "generation": "#include <zephyr/kernel.h>\n#include <zephyr/device.h>\n#include <zephyr/irq.h>\n#include <zephyr/types.h>\n\nstatic volatile atomic_t interrupt_counter = ATOMIC_INIT(0);\n\nvoid dummy_irq_handler(const void *param) {\n    ARG_UNUSED(param);\n    atomic_inc(&interrupt_counter);\n}\n\nint main(void) {\n    const unsigned int test_irq = 3; // Example IRQ line\n    unsigned long flags;\n\n    // Set interrupt handler\n    irq_connect_dynamic(test_irq, 0, dummy_irq_handler, NULL, 0);\n\n    // Enable the IRQ\n    irq_enable(test_irq);\n\n    // Disable interrupts and perform a critical operation\n    flags = irq_lock();\n    if (irq_is_enabled(test_irq)) {\n        printk(\"Interrupts are not properly disabled.\\n\");\n    }\n\n    // Critical section here\n\n    // Restore interrupts\n    irq_unlock(flags);\n    if (!irq_is_enabled(test_irq)) {\n        printk(\"Interrupts are not properly restored.\\n\");\n    }\n\n    printk(\"Interrupts test completed, interrupt counter: %d\\n\", atomic_get(&interrupt_counter));\n\n    return 0;\n}",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 6
+}

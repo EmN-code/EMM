@@ -1,0 +1,16 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:8:10: fatal error: net/conn/udp.h: No such file or directory"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to an MQTT-SN broker at\u00a047.102.103.1:1883\u00a0to publish state (\u201dwork or not work\u201d) every five seconds. To reduce energy, you must use emcute lib."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include <xtimer.h>\n#include \"net/emcute.h\"\n#include \"net/ipv6/addr.h\"\n#include \"net/af.h\"\n#include \"net/conn/udp.h\"\n#include \"net/sock/udp.h\"\n#include \"net/netif.h\"\n#include \"shell.h\"\n\n#define EMCUTE_PORT       1883\n#define EMCUTE_ID         \"riot_esp32\"\n#define TOPIC_NAME        \"state\"\n#define PUBLISH_INTERVAL  (5 * 1000000U)  // 5 seconds in microseconds\n\nstatic sock_udp_ep_t gw = { .family = AF_INET, .port = EMCUTE_PORT };\nstatic emcute_topic_t topic;\nstatic char state_msg[20];\n\nstatic void *emcute_thread(void *arg)\n{\n    (void)arg;\n\n    sock_udp_ep_t local = { .family = AF_INET, .port = 0 };\n    sock_udp_t sock;\n\n    if (sock_udp_create(&sock, &local, &gw, 0) < 0) {\n        puts(\"Error creating UDP socket\");\n        return NULL;\n    }\n\n    emcute_sub_t sub;\n    memset(&sub, 0, sizeof(sub));\n\n    if (emcute_con(&sub, EMCUTE_ID, true, &sock) != EMCUTE_OK) {\n        puts(\"Error connecting to MQTT-SN broker\");\n        return NULL;\n    }\n\n    if (emcute_reg(&sub, &topic, TOPIC_NAME) != EMCUTE_OK) {\n        puts(\"Error registering topic\");\n        return NULL;\n    }\n\n    while (1) {\n        // Simulate state change\n        const char *states[] = { \"work\", \"not work\" };\n        static int state_index = 0;\n        state_index = (state_index + 1) % 2;\n        strcpy(state_msg, states[state_index]);\n\n        if (emcute_pub(&sub, &topic, state_msg, strlen(state_msg), 0) != EMCUTE_OK) {\n            puts(\"Error publishing message\");\n        } else {\n            printf(\"Published: %s\\n\", state_msg);\n        }\n\n        xtimer_usleep(PUBLISH_INTERVAL);\n    }\n\n    return NULL;\n}\n\nint main(void)\n{\n    // Initialize network interface\n    netif_t *netif = netif_iter(NULL);\n    if (!netif) {\n        puts(\"No network interface found\");\n        return 1;\n    }\n\n    // Set gateway IP address\n    if (ipv4_addr_from_str((ipv4_addr_t *)&gw.addr.ipv4, \"47.102.103.1\") == NULL) {\n        puts(\"Error parsing gateway IP address\");\n        return 1;\n    }\n\n    // Start the emcute thread\n    thread_create(NULL, 2048, THREAD_PRIORITY_MAIN - 1, 0, emcute_thread, NULL, \"emcute\");\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

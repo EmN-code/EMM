@@ -1,0 +1,16 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:37:9: error: implicit declaration of function 'thread_change_priority'; did you mean 'thread_high_priority'? [-Werror=implicit-function-declaration]"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32. It starts two threads and change priority at runtime."
+        ]
+    ],
+    "generation": "\n#include \"thread.h\"\n#include \"xtimer.h\"\n#include \"periph/gpio.h\"\n#include \"log.h\"\n\n#define THREAD_STACKSIZE 512\n#define THREAD_PRIORITY_HIGH 5\n#define THREAD_PRIORITY_LOW 10\n\nstatic char stack_low[THREAD_STACKSIZE];\nstatic char stack_high[THREAD_STACKSIZE];\n\nstatic kernel_pid_t pid_low, pid_high;\n\nvoid *thread_low_priority(void *arg)\n{\n    (void)arg;\n\n    while (1) {\n        LOG_INFO(\"Low priority thread running\\n\");\n        xtimer_sleep(2);\n    }\n\n    return NULL;\n}\n\nvoid *thread_high_priority(void *arg)\n{\n    (void)arg;\n\n    while (1) {\n        LOG_INFO(\"High priority thread running\\n\");\n        xtimer_sleep(2);\n\n        // Change priority of low priority thread to high\n        thread_change_priority(pid_low, THREAD_PRIORITY_HIGH);\n        LOG_INFO(\"Changed low priority thread to high priority\\n\");\n\n        xtimer_sleep(10);\n\n        // Change priority of low priority thread back to low\n        thread_change_priority(pid_low, THREAD_PRIORITY_LOW);\n        LOG_INFO(\"Changed low priority thread back to low priority\\n\");\n    }\n\n    return NULL;\n}\n\nint main(void)\n{\n    // Initialize logging\n    LOG_INFO(\"Starting RIOT application on ESP32\\n\");\n\n    // Create low priority thread\n    pid_low = thread_create(stack_low, sizeof(stack_low),\n                            THREAD_PRIORITY_LOW, THREAD_CREATE_STACKTEST,\n                            thread_low_priority, NULL, \"low_priority\");\n\n    // Create high priority thread\n    pid_high = thread_create(stack_high, sizeof(stack_high),\n                             THREAD_PRIORITY_HIGH, THREAD_CREATE_STACKTEST,\n                             thread_high_priority, NULL, \"high_priority\");\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

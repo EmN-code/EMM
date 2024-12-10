@@ -1,0 +1,21 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:37:9: error: implicit declaration of function 'inet_pton' [-Werror=implicit-function-declaration]",
+        "/root/RIOT/examples/LLM_Gen/main.c:15:13: error: 'emcute_stack' defined but not used [-Werror=unused-variable]"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to an MQTT-SN broker at\u00a047.102.103.1:1883\u00a0to publish state (\u201dwork or not work\u201d) every five seconds. To reduce energy, you must use emcute lib."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: [\"/root/RIOT/examples/LLM_Gen/main.c:20:38: error: argument to 'sizeof' in 'strncpy' call is the same expression as the destination; did you mean to provide an explicit length? [-Werror=sizeof-pointer-memaccess]\", \"/root/RIOT/examples/LLM_Gen/main.c:20:18: error: passing argument 1 of 'strncpy' discards 'const' qualifier from pointer target type [-Werror=discarded-qualifiers]\", \"/root/RIOT/examples/LLM_Gen/main.c:39:5: error: implicit declaration of function 'inet_pton' [-Werror=implicit-function-declaration]\", \"/root/RIOT/examples/LLM_Gen/main.c:20:5: error: 'strncpy' output truncated copying 4 bytes from a string of length 5 [-Werror=stringop-truncation]\", \"/root/RIOT/examples/LLM_Gen/main.c:20:18: error: 'topic.name' is used uninitialized [-Werror=uninitialized]\"] and Invoke the code tool to solve the error and structure the output with a prefix and code block."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include \"xtimer.h\"\n#include \"net/emcute.h\"\n#include \"net/ipv4/addr.h\"\n#include \"net/sock/udp.h\"\n\n#define EMCUTE_PORT 1883\n#define TOPIC_NAME \"state\"\n#define CLIENT_ID \"esp32_client\"\n#define STATE_MSG \"work\"\n#define INTERVAL (5 * 1000000U)  // 5 seconds in microseconds\n\nstatic char emcute_stack[THREAD_STACKSIZE_DEFAULT];\nstatic sock_udp_ep_t gw = { .family = AF_INET };\nstatic emcute_topic_t topic;\n\nvoid publish_state(void) {\n    static char msg[10];\n    strncpy(msg, STATE_MSG, sizeof(msg) - 1);\n    msg[sizeof(msg) - 1] = '\\0';\n\n    if (emcute_pub(&topic, msg, strlen(msg), 0) != EMCUTE_OK) {\n        puts(\"Error: unable to publish message\");\n    } else {\n        puts(\"Published state message\");\n    }\n}\n\nint main(void) {\n    // Initialize the topic\n    topic.name = TOPIC_NAME;\n    topic.id = 0;  // Will be set by emcute_reg\n\n    // Convert IP address from string to binary form\n    if (inet_pton(AF_INET, \"47.102.103.1\", &gw.addr.ipv4) <= 0) {\n        puts(\"Error: invalid IP address\");\n        return 1;\n    }\n    gw.port = EMCUTE_PORT;\n\n    // Connect to the MQTT-SN broker\n    if (emcute_con(&gw, true, NULL, NULL, 0, 0) != EMCUTE_OK) {\n        puts(\"Error: unable to connect to MQTT-SN broker\");\n        return 1;\n    }\n    puts(\"Connected to MQTT-SN broker\");\n\n    // Register the topic\n    if (emcute_reg(&topic) != EMCUTE_OK) {\n        puts(\"Error: unable to register topic\");\n        return 1;\n    }\n    puts(\"Topic registered\");\n\n    // Run the emcute thread\n    emcute_run(EMCUTE_PORT, CLIENT_ID);\n\n    // Publish state every 5 seconds\n    while (1) {\n        publish_state();\n        xtimer_usleep(INTERVAL);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 11
+}

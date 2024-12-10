@@ -1,0 +1,18 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to an MQTT-SN broker at\u00a047.102.103.1:1883\u00a0to publish state (\u201dwork or not work\u201d) every five seconds. To reduce energy, you must use emcute lib."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: [\"/root/RIOT/examples/LLM_Gen/main.c:56:9: error: implicit declaration of function 'inet_pton' [-Werror=implicit-function-declaration]\"] and Invoke the code tool to solve the error and structure the output with a prefix and code block."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include <xtimer.h>\n#include <net/emcute.h>\n#include <net/sock/udp.h>\n#include <arpa/inet.h>  // Include this for inet_pton\n\n#define TOPIC_NAME \"state\"\n#define MQTT_SERVER_IP \"47.102.103.1\"\n#define MQTT_SERVER_PORT 1883\n#define CLIENT_ID \"esp32_client\"\n#define PUBLISH_INTERVAL (5 * 1000000U)  // 5 seconds in microseconds\n\nstatic emcute_topic_t topic;\n\nstatic void publish_state(void)\n{\n    const char *state = \"work\";  // or \"not work\" based on your logic\n    int res = emcute_pub(&topic, state, strlen(state), 0);\n    if (res != EMCUTE_OK) {\n        printf(\"Error publishing state: %d\\n\", res);\n    } else {\n        printf(\"State published: %s\\n\", state);\n    }\n}\n\nint main(void)\n{\n    sock_udp_ep_t gw = { .family = AF_INET, .port = MQTT_SERVER_PORT };\n    inet_pton(AF_INET, MQTT_SERVER_IP, &gw.addr.ipv4);\n\n    // Initialize the EMCUTE stack\n    emcute_run(MQTT_SERVER_PORT, CLIENT_ID);\n\n    // Connect to the MQTT-SN broker\n    int res = emcute_con(&gw, true, NULL, NULL, 0, 0);\n    if (res != EMCUTE_OK) {\n        printf(\"Error connecting to MQTT-SN broker: %d\\n\", res);\n        return 1;\n    }\n\n    // Register the topic\n    topic.name = TOPIC_NAME;\n    res = emcute_reg(&topic);\n    if (res != EMCUTE_OK) {\n        printf(\"Error registering topic: %d\\n\", res);\n        return 1;\n    }\n\n    // Publish state every 5 seconds\n    while (1) {\n        publish_state();\n        xtimer_usleep(PUBLISH_INTERVAL);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 4
+}

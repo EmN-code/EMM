@@ -1,0 +1,14 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32 to achieve interrupt handling. The program uses atomic variables to verify if disabling and restoring interrupts works correctly. You should use irq but not use gpio interface. "
+        ]
+    ],
+    "generation": "\n#include \"irq.h\"\n#include \"thread.h\"\n#include \"xtimer.h\"\n#include \"atomic_utils.h\"\n\n#define TEST_VALUE 0x12345678\n\nvolatile uint32_t atomic_var = TEST_VALUE;\n\nvoid interrupt_handler(void)\n{\n    // Simulate an interrupt by modifying the atomic variable\n    atomic_var = TEST_VALUE ^ 0xFFFFFFFF;\n}\n\nint main(void)\n{\n    // Disable interrupts initially\n    unsigned state = irq_disable();\n\n    // Modify the atomic variable in an atomic context\n    atomic_var = TEST_VALUE;\n\n    // Re-enable interrupts\n    irq_restore(state);\n\n    // Simulate an interrupt by calling the handler\n    interrupt_handler();\n\n    // Check if the atomic variable was modified correctly\n    if (atomic_var == (TEST_VALUE ^ 0xFFFFFFFF)) {\n        printf(\"Interrupt handling and atomic variable modification successful!\\n\");\n    } else {\n        printf(\"Interrupt handling or atomic variable modification failed!\\n\");\n    }\n\n    // Infinite loop to keep the program running\n    while (1) {\n        // Sleep for a while to avoid busy-waiting\n        xtimer_sleep(1);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

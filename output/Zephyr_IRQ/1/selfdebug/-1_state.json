@@ -1,0 +1,14 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop Zephyr code on an ESP32 to achieve interrupt handling. The program uses atomic variables to verify if disabling and restoring interrupts works correctly. You should use irq but not use gpio interface. "
+        ]
+    ],
+    "generation": "\n#include <zephyr/kernel.h>\n#include <zephyr/irq.h>\n#include <zephyr/sys/atomic.h>\n#include <zephyr/init.h>\n#include <zephyr/device.h>\n#include <zephyr/toolchain.h>\n\n#define MY_IRQ 5  // Example IRQ number, adjust according to your hardware\n\nstatic atomic_t interrupt_flag = ATOMIC_INIT(0);\n\nvoid my_isr(const void *arg)\n{\n    ARG_UNUSED(arg);\n    atomic_set(&interrupt_flag, 1);\n}\n\nvoid test_interrupt_handling(void)\n{\n    int key;\n\n    // Disable interrupts\n    key = irq_lock();\n\n    // Simulate some critical section code\n    k_sleep(K_MSEC(100));\n\n    // Check if the interrupt flag was set (should not be set)\n    if (atomic_get(&interrupt_flag) == 1) {\n        printk(\"Interrupt was handled during critical section!\\n\");\n    } else {\n        printk(\"Interrupt was not handled during critical section.\\n\");\n    }\n\n    // Restore interrupts\n    irq_unlock(key);\n\n    // Wait for the interrupt to be handled\n    k_sleep(K_MSEC(100));\n\n    // Check if the interrupt flag was set (should be set)\n    if (atomic_get(&interrupt_flag) == 1) {\n        printk(\"Interrupt was handled after critical section.\\n\");\n    } else {\n        printk(\"Interrupt was not handled after critical section!\\n\");\n    }\n}\n\nvoid main(void)\n{\n    // Register the ISR for the specified IRQ\n    irq_connect_dynamic(MY_IRQ, 0, my_isr, NULL, 0);\n\n    // Enable the IRQ\n    irq_enable(MY_IRQ);\n\n    // Test the interrupt handling\n    test_interrupt_handling();\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

@@ -1,0 +1,18 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32. It read MMA8x5x every 5 seconds."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: [\"/root/RIOT/examples/LLM_Gen/main.c:6:29: error: 'MMA8X5X_ADDR' undeclared here (not in a function); did you mean 'MMA8X5X_NODEV'?\", '/root/RIOT/examples/LLM_Gen/main.c:26:13: error: void value not ignored as it ought to be'] and Invoke the code tool to solve the error and structure the output with a prefix and code block."
+        ]
+    ],
+    "generation": "\n#include \"periph/i2c.h\"\n#include \"mma8x5x.h\"\n#include \"xtimer.h\"\n#include \"thread.h\"\n\n#define MMA8X5X_I2C_ADDRESS (0x1D)  // Corrected I2C address\n\nstatic mma8x5x_t dev;\nstatic mma8x5x_data_t data;\n\nint main(void)\n{\n    mma8x5x_params_t params = {\n        .i2c = I2C_DEV(0),\n        .addr = MMA8X5X_I2C_ADDRESS,\n        .rate = MMA8X5X_RATE_50HZ,\n        .range = MMA8X5X_RANGE_2G\n    };\n\n    int res = mma8x5x_init(&dev, &params);\n    if (res != MMA8X5X_OK) {\n        printf(\"MMA8x5x initialization failed with error code %d\\n\", res);\n        return 1;\n    }\n\n    while (1) {\n        mma8x5x_read(&dev, &data);\n        printf(\"Accelerometer data: X=%d, Y=%d, Z=%d\\n\", data.x, data.y, data.z);\n        xtimer_sleep(5);  // Sleep for 5 seconds\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 10
+}

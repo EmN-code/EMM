@@ -1,0 +1,18 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32 to achieve interrupt handling. The program uses atomic variables to verify if disabling and restoring interrupts works correctly. You should use irq but not use gpio interface. "
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: [\"/root/RIOT/examples/LLM_Gen/main.c:10:1: error: unknown type name 'atomic_t'\", \"/root/RIOT/examples/LLM_Gen/main.c:10:27: error: implicit declaration of function 'ATOMIC_INIT' [-Werror=implicit-function-declaration]\", '/root/RIOT/examples/LLM_Gen/main.c:10:27: error: initializer element is not constant', \"/root/RIOT/examples/LLM_Gen/main.c:15:5: error: implicit declaration of function 'atomic_store'; did you mean 'atomic_store_u8'? [-Werror=implicit-function-declaration]\", \"/root/RIOT/examples/LLM_Gen/main.c:34:13: error: implicit declaration of function 'atomic_load'; did you mean 'atomic_load_u8'? [-Werror=implicit-function-declaration]\"] and Invoke the code tool to solve the error and structure the output with a prefix and code block. "
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <stdint.h>\n#include \"irq.h\"\n#include \"thread.h\"\n#include \"xtimer.h\"\n\n#define TIMER_INTERVAL (1000000U)  // 1 second\n\nvolatile uint32_t atomic_var = 0;\n\nvoid timer_callback(void *arg)\n{\n    (void)arg;\n    atomic_var++;\n}\n\nint main(void)\n{\n    xtimer_t timer;\n\n    // Initialize the timer\n    timer.callback = timer_callback;\n    timer.arg = NULL;\n\n    // Set the timer to trigger every second\n    xtimer_set(&timer, TIMER_INTERVAL);\n\n    // Disable interrupts\n    unsigned state = irq_disable();\n\n    // Modify the atomic variable while interrupts are disabled\n    atomic_var = 10;\n\n    // Restore interrupts\n    irq_restore(state);\n\n    // Wait for the timer to trigger\n    xtimer_usleep(TIMER_INTERVAL * 2);\n\n    // Check the value of the atomic variable\n    if (atomic_var == 11) {\n        printf(\"Interrupts were correctly disabled and restored.\\n\");\n    } else {\n        printf(\"Interrupts were not correctly disabled and restored.\\n\");\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 7
+}

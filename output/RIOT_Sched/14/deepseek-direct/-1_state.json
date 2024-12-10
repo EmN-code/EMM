@@ -1,0 +1,18 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:17:53: error: 'sched_active_thread' undeclared (first use in this function); did you mean 'sched_num_threads'?",
+        "/root/RIOT/examples/LLM_Gen/main.c:27:53: error: 'sched_active_thread' undeclared (first use in this function); did you mean 'sched_num_threads'?",
+        "/root/RIOT/examples/LLM_Gen/main.c:45:5: error: implicit declaration of function 'thread_change_priority'; did you mean 'sched_change_priority'? [-Werror=implicit-function-declaration]"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32. It starts two threads and change priority at runtime."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include \"thread.h\"\n#include \"xtimer.h\"\n\n#define THREAD_STACKSIZE 512\n\nchar stack1[THREAD_STACKSIZE];\nchar stack2[THREAD_STACKSIZE];\n\nkernel_pid_t pid1, pid2;\n\nvoid *thread1(void *arg)\n{\n    (void)arg;\n    while (1) {\n        printf(\"Thread 1 running at priority %d\\n\", sched_active_thread->priority);\n        xtimer_sleep(2);\n    }\n    return NULL;\n}\n\nvoid *thread2(void *arg)\n{\n    (void)arg;\n    while (1) {\n        printf(\"Thread 2 running at priority %d\\n\", sched_active_thread->priority);\n        xtimer_sleep(2);\n    }\n    return NULL;\n}\n\nint main(void)\n{\n    puts(\"Starting two threads with different priorities...\");\n\n    // Create thread 1 with priority 5\n    pid1 = thread_create(stack1, sizeof(stack1), 5, THREAD_CREATE_STACKTEST, thread1, NULL, \"thread1\");\n\n    // Create thread 2 with priority 3\n    pid2 = thread_create(stack2, sizeof(stack2), 3, THREAD_CREATE_STACKTEST, thread2, NULL, \"thread2\");\n\n    // Change priority of thread 1 to 2 after 10 seconds\n    xtimer_sleep(10);\n    thread_change_priority(pid1, 2);\n    printf(\"Changed priority of thread 1 to 2\\n\");\n\n    // Change priority of thread 2 to 4 after 20 seconds\n    xtimer_sleep(10);\n    thread_change_priority(pid2, 4);\n    printf(\"Changed priority of thread 2 to 4\\n\");\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

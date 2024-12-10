@@ -1,0 +1,16 @@
+/home/kaikai/contiki-ng/os/contiki-net.h
+/home/kaikai/contiki-ng/os/contiki.h
+/home/kaikai/contiki-ng/os/net/app-layer/coap/coap-engine.h
+/home/kaikai/contiki-ng/os/net/app-layer/coap/coap-blocking-api.h
+/home/kaikai/contiki-ng/os/dev/button-hal.h
+/home/kaikai/contiki-ng/os/dev/button-hal.h
+/home/kaikai/contiki-ng/os/net/app-layer/coap/coap-log.h
+/home/kaikai/contiki-ng/arch/dev/sensor/dht11/dht11-sensor.h
+/home/kaikai/contiki-ng/arch/dev/etc/rgb-led/rgb-led.h
+/home/kaikai/contiki-ng/os/sys/etimer.h
+/home/kaikai/contiki-ng/os/net/routing/routing.h
+/home/kaikai/contiki-ng/os/lib/random.h
+/home/kaikai/contiki-ng/os/net/netstack.h
+/home/kaikai/contiki-ng/os/net/ipv6/simple-udp.h
+/home/kaikai/contiki-ng/os/net/app-layer/mqtt/mqtt.h
+/home/kaikai/contiki-ng/os/net/app-layer/mqtt/mqtt-prop.h

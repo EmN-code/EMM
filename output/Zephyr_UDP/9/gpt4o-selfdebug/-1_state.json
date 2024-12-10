@@ -1,0 +1,22 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a Zephyr program for the ESP32 that connects to a UDP server at `47.102.103.1:20001` to send device state (\u201dwork or not work\u201d) by UDP method every five seconds."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: [\"E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:17:53: error: expected expression before ')' token\"] and Invoke the code tool to solve the error and structure the output with a prefix and code block."
+        ],
+        [
+            "assistant",
+            "prefix: This Zephyr program for ESP32 creates a UDP connection to a server at IP '47.102.103.1' on port '20001'. It sends the message \"work\" every five seconds. The `zsock_socket` function initializes the UDP socket, and `zsock_sendto` is used for sending data to the specified server address. Each error is checked, and corresponding messages are printed using `printk` to help with debugging, such as socket creation failures or send operation failures. \n block: #include <zephyr/net/net_ip.h>\n#include <zephyr/net/socket.h>\n#include <zephyr/kernel.h>\n\n#define SERVER_ADDR \"47.102.103.1\"\n#define SERVER_PORT 20001\n#define SEND_INTERVAL K_SECONDS(5)\n\nvoid main(void) {\n    int sock;\n    int ret;\n    struct sockaddr_in server_addr;\n    const char *msg = \"work\";\n\n    sock = zsock_socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);\n    if (sock < 0) {\n        printk(\"Failed to create socket\\n\");\n        return;\n    }\n\n    memset(&server_addr, 0, sizeof(server_addr));\n    server_addr.sin_family = AF_INET;\n    server_addr.sin_port = htons(SERVER_PORT);\n    net_addr_pton(AF_INET, SERVER_ADDR, &server_addr.sin_addr);\n\n    while (1) {\n        ret = zsock_sendto(sock, msg, strlen(msg), 0, (struct sockaddr *)&server_addr, sizeof(server_addr));\n        if (ret < 0) {\n            printk(\"Failed to send data\\n\");\n        } else {\n            printk(\"Data sent successfully\\n\");\n        }\n        k_sleep(SEND_INTERVAL);\n    }\n\n    zsock_close(sock);\n}\n \n"
+        ]
+    ],
+    "generation": "#include <zephyr/net/net_ip.h>\n#include <zephyr/net/socket.h>\n#include <zephyr/kernel.h>\n\n#define SERVER_ADDR \"47.102.103.1\"\n#define SERVER_PORT 20001\n#define SEND_INTERVAL K_SECONDS(5)\n\nvoid main(void) {\n    int sock;\n    int ret;\n    struct sockaddr_in server_addr;\n    const char *msg = \"work\";\n\n    sock = zsock_socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);\n    if (sock < 0) {\n        printk(\"Failed to create socket\\n\");\n        return;\n    }\n\n    memset(&server_addr, 0, sizeof(server_addr));\n    server_addr.sin_family = AF_INET;\n    server_addr.sin_port = htons(SERVER_PORT);\n    net_addr_pton(AF_INET, SERVER_ADDR, &server_addr.sin_addr);\n\n    while (1) {\n        ret = zsock_sendto(sock, msg, strlen(msg), 0, (struct sockaddr *)&server_addr, sizeof(server_addr));\n        if (ret < 0) {\n            printk(\"Failed to send data\\n\");\n        } else {\n            printk(\"Data sent successfully\\n\");\n        }\n        k_sleep(SEND_INTERVAL);\n    }\n\n    zsock_close(sock);\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 3
+}

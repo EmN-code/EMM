@@ -1,0 +1,18 @@
+{
+    "error": [
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:69:32: error: 'struct mqtt_topic' has no member named 'utf8'",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:70:32: error: 'struct mqtt_topic' has no member named 'size'\r",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:76:18: error: 'struct mqtt_publish_param' has no member named 'qos'\r"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a Zephyr program for the ESP32 that connects to an MQTT broker at 47.102.103.1:1883 to publish state (\u201dwork or not work\u201d) each five seconds. Do not use emcute lib."
+        ]
+    ],
+    "generation": "\n#include <zephyr/kernel.h>\n#include <zephyr/device.h>\n#include <zephyr/drivers/gpio.h>\n#include <zephyr/net/socket.h>\n#include <zephyr/net/mqtt.h>\n#include <zephyr/logging/log.h>\n\n#define MQTT_BROKER_IP \"47.102.103.1\"\n#define MQTT_BROKER_PORT 1883\n#define MQTT_TOPIC \"device/state\"\n#define MQTT_CLIENT_ID \"esp32_client\"\n#define MQTT_USERNAME NULL\n#define MQTT_PASSWORD NULL\n\nLOG_MODULE_REGISTER(mqtt_example);\n\nstatic struct mqtt_client client_ctx;\nstatic uint8_t rx_buffer[100];\nstatic uint8_t tx_buffer[100];\nstatic struct mqtt_publish_param publish_param;\n\nstatic void message_cb(struct mqtt_client *const client,\n                       const struct mqtt_evt *evt)\n{\n    switch (evt->type) {\n    case MQTT_EVT_CONNACK:\n        LOG_INF(\"Connected to MQTT broker\");\n        break;\n    case MQTT_EVT_DISCONNECT:\n        LOG_INF(\"Disconnected from MQTT broker\");\n        break;\n    default:\n        break;\n    }\n}\n\nstatic int connect_mqtt(void)\n{\n    struct sockaddr_storage broker;\n    struct sockaddr_in *broker4 = (struct sockaddr_in *)&broker;\n\n    broker4->sin_family = AF_INET;\n    broker4->sin_port = htons(MQTT_BROKER_PORT);\n    inet_pton(AF_INET, MQTT_BROKER_IP, &broker4->sin_addr);\n\n    mqtt_client_init(&client_ctx);\n\n    client_ctx.broker = &broker;\n    client_ctx.client_id.utf8 = (uint8_t *)MQTT_CLIENT_ID;\n    client_ctx.client_id.size = strlen(MQTT_CLIENT_ID);\n    client_ctx.password = NULL;\n    client_ctx.user_name = NULL;\n    client_ctx.protocol_version = MQTT_VERSION_3_1_1;\n    client_ctx.evt_cb = message_cb;\n    client_ctx.rx_buf = rx_buffer;\n    client_ctx.rx_buf_size = sizeof(rx_buffer);\n    client_ctx.tx_buf = tx_buffer;\n    client_ctx.tx_buf_size = sizeof(tx_buffer);\n\n    return mqtt_connect(&client_ctx);\n}\n\nstatic void publish_state(void)\n{\n    static bool state = false;\n    const char *state_str = state ? \"work\" : \"not work\";\n\n    publish_param.message.topic.utf8 = (uint8_t *)MQTT_TOPIC;\n    publish_param.message.topic.size = strlen(MQTT_TOPIC);\n    publish_param.message.payload.data = (uint8_t *)state_str;\n    publish_param.message.payload.len = strlen(state_str);\n    publish_param.message_id = 0;\n    publish_param.dup_flag = 0;\n    publish_param.retain_flag = 0;\n    publish_param.qos = MQTT_QOS_1_AT_LEAST_ONCE;\n\n    int ret = mqtt_publish(&client_ctx, &publish_param);\n    if (ret) {\n        LOG_ERR(\"Failed to publish message, error: %d\", ret);\n    } else {\n        LOG_INF(\"Published: %s\", state_str);\n    }\n\n    state = !state;\n}\n\nint main(void)\n{\n    int ret;\n\n    LOG_INF(\"Starting MQTT example\");\n\n    ret = connect_mqtt();\n    if (ret) {\n        LOG_ERR(\"Failed to connect to MQTT broker, error: %d\", ret);\n        return -1;\n    }\n\n    while (1) {\n        k_sleep(K_SECONDS(5));\n        publish_state();\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

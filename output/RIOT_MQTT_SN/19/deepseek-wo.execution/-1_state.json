@@ -1,0 +1,26 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to an MQTT-SN broker at\u00a047.102.103.1:1883\u00a0to publish state (\u201dwork or not work\u201d) every five seconds. To reduce energy, you must use emcute lib."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: [\"/root/RIOT/examples/LLM_Gen/main.c:28:9: error: implicit declaration of function 'net_init' [-Werror=implicit-function-declaration]\", \"/root/RIOT/examples/LLM_Gen/main.c:34:9: error: implicit declaration of function 'inet_pton' [-Werror=implicit-function-declaration]\"] and Invoke the code tool to solve the error and structure the output with a prefix and code block. "
+        ],
+        [
+            "user",
+            "Your answer cannot contain the provided headers and apis from blacklist!): ['stdio.h', 'string.h', 'net/emcute.h', 'net/conn/udp.h', 'net/netif.h', 'shell.h', 'msg.h', 'emcute_run', 'xtimer_usleep', 'ipv4_addr_from_str', 'netinet/in.h', 'net/af.h', 'event/thread.h', 'thread.h', 'net/gcoap.h', 'net/ipv6/addr.h', 'net/sock/udp.h', 'arpa/inet.h', 'stdlib.h', 'ztimer.h', 'net_init', 'thread_create']"
+        ],
+        [
+            "user",
+            "Your answer must contain all the ['net/ipv6/addr.h', 'stdlib.h', 'net/emcute.h', 'paho_mqtt.h', 'msg.h', 'mma8x5x_regs.h', 'mma8x5x.h', 'event/thread.h', 'time_units.h', 'xtimer.h', 'esp_system.h', 'thread.h', 'MQTTClient.h', 'mma8x5x_params.h', 'mutex.h', 'stdio.h', 'dht_params.h', 'stdatomic.h', 'ztimer.h', 'dht.h', 'stdbool.h', 'kernel_defines.h', 'net/sock/util.h', 'evtimer_mbox.h', 'netinet/in.h', 'timex.h', 'evtimer_msg.h', 'arpa/inet.h', 'sys/socket.h', 'unistd.h', 'stddef.h', 'net/af.h', 'mbox.h', 'net/sock/udp.h', 'net/gcoap.h']!"
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <stdbool.h>\n#include <net/emcute.h>\n#include <arpa/inet.h>\n#include <msg.h>\n#include <xtimer.h>\n\n#define SERVER_IP \"47.102.103.1\"\n#define SERVER_PORT 1883\n#define TOPIC_NAME \"state\"\n#define MSG_QUEUE_SIZE 8\n\nstatic msg_t msg_queue[MSG_QUEUE_SIZE];\n\nvoid publish_state(void) {\n    static const char *states[] = {\"work\", \"not work\"};\n    static uint8_t state_index = 0;\n\n    emcute_topic_t topic;\n    topic.name = TOPIC_NAME;\n    topic.id = 0; // Topic ID will be assigned by the broker\n\n    if (emcute_reg(&topic) != EMCUTE_OK) {\n        puts(\"Error: could not register topic\");\n        return;\n    }\n\n    const char *state = states[state_index];\n    if (emcute_pub(&topic, state, strlen(state), 0) != EMCUTE_OK) {\n        puts(\"Error: could not publish message\");\n    } else {\n        puts(\"State published\");\n    }\n\n    state_index = (state_index + 1) % 2;\n}\n\nint main(void) {\n    sock_udp_ep_t gw = { .port = SERVER_PORT };\n    inet_pton(AF_INET, SERVER_IP, &gw.addr.ipv4);\n\n    if (emcute_con(&gw, true, NULL, NULL, 0, 0) != EMCUTE_OK) {\n        puts(\"Error: could not connect to MQTT-SN broker\");\n        return 1;\n    }\n\n    msg_init_queue(msg_queue, MSG_QUEUE_SIZE);\n\n    while (1) {\n        publish_state();\n        xtimer_sleep(5);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 6
+}

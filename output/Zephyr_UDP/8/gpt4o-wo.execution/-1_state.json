@@ -1,0 +1,14 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a Zephyr program for the ESP32 that connects to a UDP server at `47.102.103.1:20001` to send device state (\u201dwork or not work\u201d) by UDP method every five seconds."
+        ]
+    ],
+    "generation": "\n#include <zephyr/kernel.h>\n#include <zephyr/net/socket.h>\n#include <zephyr/device.h>\n#include <zephyr/drivers/gpio.h>\n#include <zephyr/logging/log.h>\n\n#define SERVER_IP \"47.102.103.1\"\n#define SERVER_PORT 20001\n#define DEVICE_STATE_MSG \"work\"\n#define DEVICE_STATE_MSG_LEN 4\n#define SEND_INTERVAL_SECONDS 5\n\nLOG_MODULE_REGISTER(main);\n\nvoid send_device_state(int sock) {\n    struct sockaddr_in server_addr;\n    server_addr.sin_family = AF_INET;\n    server_addr.sin_port = htons(SERVER_PORT);\n    inet_pton(AF_INET, SERVER_IP, &server_addr.sin_addr);\n\n    ssize_t ret = sendto(sock, DEVICE_STATE_MSG, DEVICE_STATE_MSG_LEN, 0, (struct sockaddr *)&server_addr, sizeof(server_addr));\n    if (ret < 0) {\n        LOG_ERR(\"Failed to send device state: %d\", errno);\n    } else {\n        LOG_INF(\"Device state sent: %s\", DEVICE_STATE_MSG);\n    }\n}\n\nint main(void) {\n    int sock;\n\n    sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);\n    if (sock < 0) {\n        LOG_ERR(\"Failed to create socket: %d\", errno);\n        return -1;\n    }\n\n    while (1) {\n        send_device_state(sock);\n        k_sleep(K_SECONDS(SEND_INTERVAL_SECONDS));\n    }\n\n    close(sock);\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

@@ -1,0 +1,22 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32. It starts two threads and change priority at runtime."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: ['/root/RIOT/examples/LLM_Gen/main.c:5: error: \"THREAD_STACKSIZE_MAIN\" redefined [-Werror]', '/root/RIOT/examples/LLM_Gen/main.c:6: error: \"THREAD_PRIORITY_MAIN\" redefined [-Werror]'] and Invoke the code tool to solve the error and structure the output with a prefix and code block. "
+        ],
+        [
+            "assistant",
+            "prefix: The following RIOT code for ESP32 creates two threads with different priorities and changes their priorities at runtime. The code first defines stack size and priority levels for the threads without re-defining the existing THREAD_STACKSIZE_MAIN and THREAD_PRIORITY_MAIN macros. Then, it creates two threads and assigns them functions to execute. After the threads are running, it changes their priorities to demonstrate priority management. Ensure to include necessary RIOT headers and platform-specific configurations if needed. \n block: #include <stdio.h>\n#include <stdint.h>\n#include <thread.h>\n#include <msg.h>\n\n#define THREAD_STACKSIZE    (THREAD_STACKSIZE_MAIN)\n#define THREAD_PRIORITY_ONE  (THREAD_PRIORITY_MAIN - 1)\n#define THREAD_PRIORITY_TWO  (THREAD_PRIORITY_MAIN - 2)\n\nchar stack_one[THREAD_STACKSIZE];\nchar stack_two[THREAD_STACKSIZE];\n\nvoid *thread_func(void *arg) {\n    (void)arg;\n    printf(\"Thread is running\\n\");\n    return NULL;\n}\n\nint main(void) {\n    kernel_pid_t thread_one = thread_create(stack_one, sizeof(stack_one), THREAD_PRIORITY_ONE, THREAD_CREATE_STACKTEST, thread_func, NULL, \"thread_one\");\n    kernel_pid_t thread_two = thread_create(stack_two, sizeof(stack_two), THREAD_PRIORITY_TWO, THREAD_CREATE_STACKTEST, thread_func, NULL, \"thread_two\");\n\n    printf(\"Threads created\\n\");\n\n    // Simulate changing thread priority at runtime\n    sched_change_priority(thread_get(thread_one), THREAD_PRIORITY_TWO);\n    sched_change_priority(thread_get(thread_two), THREAD_PRIORITY_ONE);\n\n    return 0;\n} \n"
+        ]
+    ],
+    "generation": "#include <stdio.h>\n#include <stdint.h>\n#include <thread.h>\n#include <msg.h>\n\n#define THREAD_STACKSIZE    (THREAD_STACKSIZE_MAIN)\n#define THREAD_PRIORITY_ONE  (THREAD_PRIORITY_MAIN - 1)\n#define THREAD_PRIORITY_TWO  (THREAD_PRIORITY_MAIN - 2)\n\nchar stack_one[THREAD_STACKSIZE];\nchar stack_two[THREAD_STACKSIZE];\n\nvoid *thread_func(void *arg) {\n    (void)arg;\n    printf(\"Thread is running\\n\");\n    return NULL;\n}\n\nint main(void) {\n    kernel_pid_t thread_one = thread_create(stack_one, sizeof(stack_one), THREAD_PRIORITY_ONE, THREAD_CREATE_STACKTEST, thread_func, NULL, \"thread_one\");\n    kernel_pid_t thread_two = thread_create(stack_two, sizeof(stack_two), THREAD_PRIORITY_TWO, THREAD_CREATE_STACKTEST, thread_func, NULL, \"thread_two\");\n\n    printf(\"Threads created\\n\");\n\n    // Simulate changing thread priority at runtime\n    sched_change_priority(thread_get(thread_one), THREAD_PRIORITY_TWO);\n    sched_change_priority(thread_get(thread_two), THREAD_PRIORITY_ONE);\n\n    return 0;\n}",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 8
+}

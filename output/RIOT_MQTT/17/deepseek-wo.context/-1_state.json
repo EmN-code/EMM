@@ -1,0 +1,24 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:5:10: fatal error: net/mqtt_client.h: No such file or directory"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to an MQTT broker at\u00a047.102.103.1:1883\u00a0to publish state (\u201dwork or not work\u201d) each five seconds. Do not use emcute lib."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: ['/root/RIOT/examples/LLM_Gen/main.c:6:10: fatal error: net/mqtt.h: No such file or directory'] and Invoke the code tool to solve the error and structure the output with a prefix and code block. "
+        ],
+        [
+            "user",
+            "Note: you must ensure that 'MQTTClient.h' is the last header file to be included, if it needs to be used."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <xtimer.h>\n#include <net/sock/tcp.h>\n#include <net/mqtt_client.h>\n\n#define MQTT_BROKER_IP \"47.102.103.1\"\n#define MQTT_BROKER_PORT 1883\n#define MQTT_TOPIC \"state\"\n#define MQTT_MESSAGE \"work\"\n#define MQTT_MESSAGE_LEN 4\n#define MQTT_CLIENT_ID \"esp32_client\"\n\nstatic void mqtt_publish(MQTTClient *client) {\n    MQTTMessage message;\n    message.qos = QOS0;\n    message.retained = 0;\n    message.dup = 0;\n    message.id = 0;\n    message.payload = (void *)MQTT_MESSAGE;\n    message.payloadlen = MQTT_MESSAGE_LEN;\n\n    MQTTPublish(client, MQTT_TOPIC, &message);\n}\n\nint main(void) {\n    printf(\"Starting MQTT client...\\n\");\n\n    Network network;\n    MQTTClient client;\n\n    NetworkInit(&network);\n    int rc = NetworkConnect(&network, MQTT_BROKER_IP, MQTT_BROKER_PORT);\n    if (rc != 0) {\n        printf(\"Failed to connect to MQTT broker\\n\");\n        return 1;\n    }\n\n    MQTTClientInit(&client, &network, 1000, NULL, NULL, NULL);\n    MQTTPacket_connectData data = MQTTPacket_connectData_initializer;\n    data.MQTTVersion = 3;\n    data.clientID.cstring = MQTT_CLIENT_ID;\n    data.keepAliveInterval = 10;\n    data.cleansession = 1;\n\n    if ((rc = MQTTConnect(&client, &data)) != 0) {\n        printf(\"Failed to connect to MQTT broker, return code %d\\n\", rc);\n        return 1;\n    }\n\n    printf(\"Connected to MQTT broker\\n\");\n\n    while (1) {\n        mqtt_publish(&client);\n        xtimer_sleep(5);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 11
+}

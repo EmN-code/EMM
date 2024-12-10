@@ -1,0 +1,16 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:23:5: error: implicit declaration of function 'irq_set_handler' [-Werror=implicit-function-declaration]"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32 to achieve interrupt handling. The program uses atomic variables to verify if disabling and restoring interrupts works correctly. You should use irq but not use gpio interface. "
+        ]
+    ],
+    "generation": "\n#include \"irq.h\"\n#include \"thread.h\"\n#include \"xtimer.h\"\n#include \"atomic_utils.h\"\n\n#define TEST_VALUE 0x12345678\n\nvolatile uint32_t atomic_var = TEST_VALUE;\n\nvoid interrupt_handler(void)\n{\n    // Simulate an interrupt by modifying the atomic variable\n    atomic_var = TEST_VALUE + 1;\n}\n\nint main(void)\n{\n    // Disable interrupts initially\n    unsigned state = irq_disable();\n\n    // Set up the interrupt handler\n    irq_set_handler(interrupt_handler);\n\n    // Enable interrupts\n    irq_restore(state);\n\n    // Verify that interrupts are enabled\n    if (!irq_is_enabled()) {\n        puts(\"Interrupts are not enabled!\");\n        return 1;\n    }\n\n    // Simulate some work\n    xtimer_sleep(1);\n\n    // Check the atomic variable to verify the interrupt handler was called\n    if (atomic_var == (TEST_VALUE + 1)) {\n        puts(\"Interrupt handling and atomic variable modification successful!\");\n    } else {\n        puts(\"Interrupt handling failed!\");\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

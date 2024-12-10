@@ -1,0 +1,16 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:8:10: fatal error: net/conn/udp.h: No such file or directory"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to an MQTT-SN broker at\u00a047.102.103.1:1883\u00a0to publish state (\u201dwork or not work\u201d) every five seconds. To reduce energy, you must use emcute lib."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include <xtimer.h>\n#include \"net/emcute.h\"\n#include \"net/ipv6/addr.h\"\n#include \"net/af.h\"\n#include \"net/conn/udp.h\"\n#include \"net/netif.h\"\n#include \"shell.h\"\n\n#define EMCUTE_PORT       1883\n#define EMCUTE_ID         \"riot_esp32\"\n#define TOPIC_NAME        \"state\"\n#define PUBLISH_INTERVAL  (5 * 1000000U)  // 5 seconds in microseconds\n\nstatic char stack[THREAD_STACKSIZE_DEFAULT];\nstatic emcute_topic_t topic;\n\nstatic void *emcute_thread(void *arg)\n{\n    (void)arg;\n\n    sock_udp_ep_t gw = { .family = AF_INET, .port = EMCUTE_PORT };\n    if (ipv4_addr_from_str((ipv4_addr_t *)&gw.addr.ipv4, \"47.102.103.1\") == NULL) {\n        puts(\"Error: unable to parse gateway address\");\n        return NULL;\n    }\n\n    emcute_sub_t sub;\n    memset(&sub, 0, sizeof(sub));\n\n    if (emcute_con(&sub, &gw, EMCUTE_ID) != EMCUTE_OK) {\n        puts(\"Error: unable to connect to MQTT-SN broker\");\n        return NULL;\n    }\n\n    if (emcute_reg(&sub, &topic, TOPIC_NAME) != EMCUTE_OK) {\n        puts(\"Error: unable to register topic\");\n        return NULL;\n    }\n\n    while (1) {\n        const char *state = (random_uint32() % 2) ? \"work\" : \"not work\";\n        emcute_pub(&sub, &topic, state, strlen(state), 0);\n        xtimer_usleep(PUBLISH_INTERVAL);\n    }\n\n    return NULL;\n}\n\nint main(void)\n{\n    thread_create(stack, sizeof(stack), THREAD_PRIORITY_MAIN - 1, 0, emcute_thread, NULL, \"emcute\");\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

@@ -1,0 +1,16 @@
+{
+    "error": [
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:2:10: fatal error: zephyr.h: No such file or directory\r"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop Zephyr code on an ESP32. It read MMA8x5x every 5 seconds and uses NVS to store the reading value persistently. "
+        ]
+    ],
+    "generation": "\n#include <zephyr.h>\n#include <device.h>\n#include <drivers/sensor.h>\n#include <storage/flash_map.h>\n#include <fs/nvs.h>\n#include <logging/log.h>\n\n#define MMA8X5X_DEV_NAME \"MMA8X5X\"\n#define NVS_PARTITION_ID FIXED_PARTITION_ID(storage)\n#define NVS_FLASH_SECTOR FLASH_AREA_ID(storage)\n#define NVS_FLASH_SECTOR_SIZE 4096\n\nLOG_MODULE_REGISTER(main);\n\nstatic struct nvs_fs fs;\n\nvoid init_nvs(void) {\n    int err;\n    struct flash_sector_param sector[1];\n\n    sector[0].fs_sector_id = NVS_FLASH_SECTOR;\n    sector[0].fs_sector_size = NVS_FLASH_SECTOR_SIZE;\n\n    fs.sector_count = 1;\n    fs.sector_size = NVS_FLASH_SECTOR_SIZE;\n    fs.offset = FLASH_AREA_OFFSET(storage);\n\n    err = nvs_init(&fs, \"storage\");\n    if (err) {\n        LOG_ERR(\"NVS init failed: %d\", err);\n    } else {\n        LOG_INF(\"NVS init successful\");\n    }\n}\n\nvoid store_reading(int32_t reading) {\n    int err;\n    err = nvs_write(&fs, 1, &reading, sizeof(reading));\n    if (err < 0) {\n        LOG_ERR(\"NVS write failed: %d\", err);\n    } else {\n        LOG_INF(\"NVS write successful: %d\", reading);\n    }\n}\n\nvoid read_sensor(const struct device *dev) {\n    struct sensor_value accel[3];\n    int32_t reading;\n\n    if (sensor_sample_fetch(dev) < 0) {\n        LOG_ERR(\"Sensor sample fetch failed\");\n        return;\n    }\n\n    if (sensor_channel_get(dev, SENSOR_CHAN_ACCEL_XYZ, accel) < 0) {\n        LOG_ERR(\"Sensor channel get failed\");\n        return;\n    }\n\n    reading = (accel[0].val1 * 1000000 + accel[0].val2) / 1000;\n    store_reading(reading);\n}\n\nint main(void) {\n    const struct device *dev;\n\n    dev = device_get_binding(MMA8X5X_DEV_NAME);\n    if (dev == NULL) {\n        LOG_ERR(\"Could not get %s device\", MMA8X5X_DEV_NAME);\n        return -1;\n    }\n\n    init_nvs();\n\n    while (1) {\n        read_sensor(dev);\n        k_sleep(K_SECONDS(5));\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

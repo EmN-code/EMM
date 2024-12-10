@@ -1,0 +1,18 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32, where one thread sends messages to another with different priorities. We also need to achieve inter-thread communication using\u00a0msg_t."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: [\"/root/RIOT/examples/LLM_Gen/main.c:52:9: error: 'thread_stack' undeclared (first use in this function); did you mean 'thread_sleep'?\"] and Invoke the code tool to solve the error and structure the output with a prefix and code block. "
+        ]
+    ],
+    "generation": "\n#include \"thread.h\"\n#include \"msg.h\"\n#include \"xtimer.h\"\n#include \"periph/gpio.h\"\n\n#define STACKSIZE (THREAD_STACKSIZE_DEFAULT)\n#define PRIORITY (THREAD_PRIORITY_MAIN - 1)\n\nkernel_pid_t thread_pid_high, thread_pid_low;\nchar thread_stack_high[STACKSIZE];\nchar thread_stack_low[STACKSIZE];\n\nvoid *thread_high(void *arg)\n{\n    (void)arg;\n    msg_t msg;\n\n    while (1) {\n        msg_receive(&msg);\n        printf(\"High priority thread received message: %s\\n\", (char *)msg.content.ptr);\n    }\n\n    return NULL;\n}\n\nvoid *thread_low(void *arg)\n{\n    (void)arg;\n    msg_t msg;\n    msg.content.ptr = \"Hello from low priority thread!\";\n\n    while (1) {\n        xtimer_sleep(5);\n        msg_send(&msg, thread_pid_high);\n    }\n\n    return NULL;\n}\n\nint main(void)\n{\n    thread_pid_high = thread_create(thread_stack_high, sizeof(thread_stack_high), PRIORITY, 0, thread_high, NULL, \"thread_high\");\n    thread_pid_low = thread_create(thread_stack_low, sizeof(thread_stack_low), PRIORITY + 1, 0, thread_low, NULL, \"thread_low\");\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 2
+}

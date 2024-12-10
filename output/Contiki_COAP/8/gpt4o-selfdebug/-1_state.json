@@ -1,0 +1,18 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop Contiki code on an NRF52840, which  sends a CoAP request to an COAP server. The program is configured to send CoAP POST requests \"Hello, COAP Cloud\" to the COAP server at IP address \"47.102.103.1\" and port 5683, with the URI path \"/coap/test\". "
+        ],
+        [
+            "assistant",
+            "prefix: This Contiki code for the NRF52840 platform will send a CoAP POST request to a CoAP server. The code includes the necessary imports in the required order, defines the CoAP request configuration with the specified IP address, port, and URI path, and sends a POST request containing the payload \"Hello, COAP Cloud\". \n block: #include \"contiki.h\"\n#include \"coap-engine.h\"\n#include \"coap-blocking-api.h\"\n#include <stdio.h>\n\n#define SERVER_EP \"coap://47.102.103.1:5683\"\n\nPROCESS(coap_client_process, \"CoAP Client Process\");\nAUTOSTART_PROCESSES(&coap_client_process);\n\nPROCESS_THREAD(coap_client_process, ev, data)\n{\n  static struct etimer timer;\n  static coap_endpoint_t server_ep;\n  static coap_message_t request[1];  /* This way the packet can be treated as pointer as usual. */\n  static char payload[] = \"Hello, COAP Cloud\";\n\n  PROCESS_BEGIN();\n\n  /* Initialize the REST engine. */\n  coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &server_ep);\n\n  /* Prepare the request. */\n  etimer_set(&timer, CLOCK_SECOND * 10);\n  while(1) {\n    PROCESS_YIELD_UNTIL(etimer_expired(&timer));\n\n    printf(\"POST Request to %s\\n\", SERVER_EP);\n    coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);\n    coap_set_header_uri_path(request, \"/coap/test\");\n    coap_set_payload(request, (uint8_t *)payload, sizeof(payload) - 1);\n\n    COAP_BLOCKING_REQUEST(&server_ep, request, NULL);\n\n    printf(\"POST Request sent\\n\");\n    etimer_reset(&timer);\n  }\n\n  PROCESS_END();\n} \n"
+        ]
+    ],
+    "generation": "#include \"contiki.h\"\n#include \"coap-engine.h\"\n#include \"coap-blocking-api.h\"\n#include <stdio.h>\n\n#define SERVER_EP \"coap://47.102.103.1:5683\"\n\nPROCESS(coap_client_process, \"CoAP Client Process\");\nAUTOSTART_PROCESSES(&coap_client_process);\n\nPROCESS_THREAD(coap_client_process, ev, data)\n{\n  static struct etimer timer;\n  static coap_endpoint_t server_ep;\n  static coap_message_t request[1];  /* This way the packet can be treated as pointer as usual. */\n  static char payload[] = \"Hello, COAP Cloud\";\n\n  PROCESS_BEGIN();\n\n  /* Initialize the REST engine. */\n  coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &server_ep);\n\n  /* Prepare the request. */\n  etimer_set(&timer, CLOCK_SECOND * 10);\n  while(1) {\n    PROCESS_YIELD_UNTIL(etimer_expired(&timer));\n\n    printf(\"POST Request to %s\\n\", SERVER_EP);\n    coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);\n    coap_set_header_uri_path(request, \"/coap/test\");\n    coap_set_payload(request, (uint8_t *)payload, sizeof(payload) - 1);\n\n    COAP_BLOCKING_REQUEST(&server_ep, request, NULL);\n\n    printf(\"POST Request sent\\n\");\n    etimer_reset(&timer);\n  }\n\n  PROCESS_END();\n}",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

@@ -1,0 +1,26 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to an MQTT-SN broker at\u00a047.102.103.1:1883\u00a0to publish state (\u201dwork or not work\u201d) every five seconds. To reduce energy, you must use emcute lib."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: [\"/root/RIOT/examples/LLM_Gen/main.c:37:15: error: implicit declaration of function 'inet_pton' [-Werror=implicit-function-declaration]\", \"/root/RIOT/examples/LLM_Gen/main.c:51:9: error: implicit declaration of function 'usleep'; did you mean 'sleep'? [-Werror=implicit-function-declaration]\"] and Invoke the code tool to solve the error and structure the output with a prefix and code block. "
+        ],
+        [
+            "user",
+            "Your answer cannot contain the provided headers and apis from blacklist!): ['stdio.h', 'string.h', 'xtimer.h', 'net/emcute.h', 'net/ipv6/addr.h', 'net/gnrc/ipv6.h', 'net/gnrc/netif.h', 'net/gnrc/netapi.h', 'net/gnrc/netreg.h', 'net/gnrc/udp.h', 'net/sock/udp.h', 'net/af.h', 'net/netopt.h', 'net/netif.h', 'net/netif/default.h', 'net/netif/hdr.h', 'net/netif/netopt.h', 'net/netif/ethernet.h', 'net/netif/ethernet/hdr.h', 'net/netif/ethernet/default.h', 'net/netif/ethernet/netopt.h', 'net/netif/ethernet/netif.h', 'net/netif/ethernet/netif/default.h', 'net/netif/ethernet/netif/netopt.h', 'net/netif/ethernet/netif/hdr.h', 'net/netif/ethernet/netif/netif.h', 'net/netif/ethernet/netif/netif/default.h', 'net/netif/ethernet/netif/netif/netopt.h', 'net/netif/ethernet/netif/netif/hdr.h', 'net/netif/ethernet/netif/netif/netif.h', 'net/netif/ethernet/netif/netif/netif/default.h', 'net/netif/ethernet/netif/netif/netif/netopt.h', 'net/netif/ethernet/netif/netif/netif/hdr.h', 'net/netif/ethernet/netif/netif/netif/netif.h', 'net/netif/ethernet/netif/netif/netif/netif/default.h', 'net/netif/ethernet/netif/netif/netif/netif/netopt.h', 'net/netif/ethernet/netif/netif/netif/netif/hdr.h', 'net/netif/ethernet/netif/netif/netif/netif/netif.h', 'net/netif/ethernet/netif/netif/netif/netif/netif/default.h', 'mutex.h', 'stdlib.h', 'sched.h', 'thread.h', 'sys/socket.h', 'event/thread.h', 'net/sock/util.h', 'netinet/in.h', 'net/gcoap.h', 'arpa/inet.h', 'inet_aton', 'printf', 'xtimer_sleep', 'stdbool.h', 'msg.h', 'unistd.h', 'stddef.h']"
+        ],
+        [
+            "user",
+            "Your answer must contain all the ['stdlib.h', 'net/emcute.h', 'paho_mqtt.h', 'msg.h', 'mma8x5x_regs.h', 'mma8x5x.h', 'event/thread.h', 'time_units.h', 'xtimer.h', 'esp_system.h', 'thread.h', 'MQTTClient.h', 'mma8x5x_params.h', 'mutex.h', 'stdio.h', 'dht_params.h', 'stdatomic.h', 'ztimer.h', 'dht.h', 'esp_wifi.h', 'stdbool.h', 'kernel_defines.h', 'net/sock/util.h', 'evtimer_mbox.h', 'netinet/in.h', 'timex.h', 'evtimer_msg.h', 'sys/socket.h', 'arpa/inet.h', 'unistd.h', 'stddef.h', 'mbox.h', 'net/sock/udp.h', 'net/gcoap.h']!"
+        ]
+    ],
+    "generation": "\n#include <stdlib.h>\n#include <net/emcute.h>\n#include <msg.h>\n#include <thread.h>\n#include <stdbool.h>\n#include <unistd.h>\n#include <arpa/inet.h>\n\n#define EMQX_SERVER_IP \"47.102.103.1\"\n#define EMQX_SERVER_PORT 1883\n#define TOPIC_NAME \"state\"\n#define CLIENT_ID \"esp32_client\"\n#define MSG_QUEUE_SIZE 8\n\nstatic msg_t msg_queue[MSG_QUEUE_SIZE];\n\nvoid publish_state(emcute_topic_t *topic) {\n    const char *state = \"work\";\n    emcute_pub(topic, state, strlen(state), 0);\n}\n\nint main(void) {\n    msg_init_queue(msg_queue, MSG_QUEUE_SIZE);\n\n    sock_udp_ep_t gw = { .port = EMQX_SERVER_PORT };\n    inet_pton(AF_INET, EMQX_SERVER_IP, &gw.addr.ipv4);\n\n    if (emcute_con(&gw, true, NULL, NULL, 0, 0) != EMCUTE_OK) {\n        puts(\"Error: unable to connect to MQTT-SN gateway\");\n        return 1;\n    }\n\n    emcute_topic_t topic;\n    topic.name = TOPIC_NAME;\n    if (emcute_reg(&topic) != EMCUTE_OK) {\n        puts(\"Error: unable to register topic\");\n        return 1;\n    }\n\n    while (1) {\n        publish_state(&topic);\n        sleep(5);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 10
+}

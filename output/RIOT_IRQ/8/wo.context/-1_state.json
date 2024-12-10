@@ -1,0 +1,18 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32 to achieve interrupt handling. The program uses atomic variables to verify if disabling and restoring interrupts works correctly. You should use irq but not use gpio interface. "
+        ],
+        [
+            "assistant",
+            "prefix: The following RIOT code is developed for the ESP32 platform to handle interrupts using atomic operations. It incorporates irq_disable() and irq_restore() functions from the RIOT operating system to check and ensure the interrupts can be disabled and restored properly without using any GPIO interface.\n\n### Description of the Code:\n1. **Header Files:**\n   - The code includes required header files in descending alphabetical order by their first letter.\n   - `irq_arch.h` provides the necessary functions for handling interrupts.\n\n2. **Global Variables**:\n   - `volatile unsigned int interrupt_flag`: Keeps track of whether interrupts are currently disabled.\n   - `volatile unsigned int irq_status`: Stores the status of interrupts to be restored.\n\n3. **Functions**:\n   - `interrupt_enable`: Disables interrupts. It checks if interrupts are already disabled using `interrupt_flag`. If not, it disables interrupts using `irq_disable()` and sets `interrupt_flag`.\n   - `interrupt_restore`: Restores interrupts if they were previously disabled using `interrupt_enable`. It re-enables interrupts with `irq_restore()` and clears the `interrupt_flag`.\n   - `test_interrupt_handling`: Tests the enabling and restoring of interrupts by disabling them, printing the status, and then restoring them.\n\n4. **main Function**:\n   - Initializes the program and calls `test_interrupt_handling()` to demonstrate interrupt management.\n\nThis usage of atomic operations ensures that the interrupt status is correctly managed, providing reliability in embedded applications. \n block: #include \"irq_arch.h\"\n#include <stdio.h>\n\nvolatile unsigned int interrupt_flag = 0;\nvolatile unsigned int irq_status = 0;\n\nvoid interrupt_enable(void) {\n    if (!interrupt_flag) {\n        irq_status = irq_disable();\n        interrupt_flag = 1;\n    }\n}\n\nvoid interrupt_restore(void) {\n    if (interrupt_flag) {\n        irq_restore(irq_status);\n        interrupt_flag = 0;\n    }\n}\n\nvoid test_interrupt_handling(void) {\n    printf(\"Testing interrupt handling...\\n\");\n\n    interrupt_enable();\n    printf(\"Interrupts are disabled. Status: %d\\n\", irq_status);\n\n    interrupt_restore();\n    printf(\"Interrupts are restored.\\n\");\n}\n\nint main(void) {\n    printf(\"Starting program...\\n\");\n    test_interrupt_handling();\n    return 0;\n} \n"
+        ]
+    ],
+    "generation": "#include \"irq_arch.h\"\n#include <stdio.h>\n\nvolatile unsigned int interrupt_flag = 0;\nvolatile unsigned int irq_status = 0;\n\nvoid interrupt_enable(void) {\n    if (!interrupt_flag) {\n        irq_status = irq_disable();\n        interrupt_flag = 1;\n    }\n}\n\nvoid interrupt_restore(void) {\n    if (interrupt_flag) {\n        irq_restore(irq_status);\n        interrupt_flag = 0;\n    }\n}\n\nvoid test_interrupt_handling(void) {\n    printf(\"Testing interrupt handling...\\n\");\n\n    interrupt_enable();\n    printf(\"Interrupts are disabled. Status: %d\\n\", irq_status);\n\n    interrupt_restore();\n    printf(\"Interrupts are restored.\\n\");\n}\n\nint main(void) {\n    printf(\"Starting program...\\n\");\n    test_interrupt_handling();\n    return 0;\n}",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

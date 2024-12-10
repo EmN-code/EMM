@@ -1,0 +1,16 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:4:10: fatal error: emcute.h: No such file or directory"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32 that uses Non-Volatile Storage (NVS) to store a device state (\u201d1\u201d or \u201c0\u201d) persistently. This process repeats every second, ensuring the temperature is continuously updated in storage."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include <xtimer.h>\n#include <nvs.h>\n\n#define NVS_NAMESPACE \"device_state\"\n#define NVS_KEY \"state\"\n\nvoid store_state(nvs_handle_t handle, int state) {\n    char state_str[2];\n    sprintf(state_str, \"%d\", state);\n    nvs_set_str(handle, NVS_KEY, state_str);\n    nvs_commit(handle);\n}\n\nint main(void) {\n    nvs_handle_t handle;\n    int state = 0;\n\n    // Initialize NVS\n    nvs_init();\n\n    // Open NVS namespace\n    nvs_open(NVS_NAMESPACE, NVS_READWRITE, &handle);\n\n    while (1) {\n        // Toggle state\n        state = (state == 0) ? 1 : 0;\n\n        // Store the state in NVS\n        store_state(handle, state);\n\n        // Print the current state\n        printf(\"State stored: %d\\n\", state);\n\n        // Wait for 1 second\n        xtimer_sleep(1);\n    }\n\n    // Close NVS handle\n    nvs_close(handle);\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

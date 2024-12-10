@@ -1,0 +1,18 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32 to achieve interrupt handling. The program uses atomic variables to verify if disabling and restoring interrupts works correctly. You should use irq but not use gpio interface. "
+        ],
+        [
+            "assistant",
+            "prefix: To develop a RIOT program that uses the irq interface for interrupt handling on an ESP32, we will focus on enabling and disabling interrupts and verifying their states. We'll start by defining functions to enable and disable interrupts, using the irq interface for checking if the interrupts are enabled or disabled successfully. We use the `irq_disable`, `irq_restore`, and `irq_is_enabled` functions from the irq_arch.h header file. In the main function, we will demonstrate the use of these functions by first disabling and then enabling the interrupts, returning 0 for success if the operations are performed correctly. \n block: #include <irq_arch.h>\n\n// Function to enable an interrupt and return its status\nbool enable_irq(void) {\n    unsigned state = irq_disable();\n    if (!irq_is_enabled()) {\n        irq_restore(state);\n    }\n    return irq_is_enabled();\n}\n\n// Function to disable an interrupt and return its status\nbool disable_irq(void) {\n    irq_disable();\n    return !irq_is_enabled();\n}\n\n// Main function to test the enabling and disabling of interrupts\nint main(void) {\n    // Start with interrupts enabled\n    if (disable_irq()) {\n        // Interrupts disabled successfully\n        if (enable_irq()) {\n            // Interrupts enabled successfully\n            return 0; // Success\n        }\n    }\n    return 1; // Failure\n} \n"
+        ]
+    ],
+    "generation": "#include <irq_arch.h>\n\n// Function to enable an interrupt and return its status\nbool enable_irq(void) {\n    unsigned state = irq_disable();\n    if (!irq_is_enabled()) {\n        irq_restore(state);\n    }\n    return irq_is_enabled();\n}\n\n// Function to disable an interrupt and return its status\nbool disable_irq(void) {\n    irq_disable();\n    return !irq_is_enabled();\n}\n\n// Main function to test the enabling and disabling of interrupts\nint main(void) {\n    // Start with interrupts enabled\n    if (disable_irq()) {\n        // Interrupts disabled successfully\n        if (enable_irq()) {\n            // Interrupts enabled successfully\n            return 0; // Success\n        }\n    }\n    return 1; // Failure\n}",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

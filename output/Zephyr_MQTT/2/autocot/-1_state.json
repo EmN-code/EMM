@@ -1,0 +1,30 @@
+{
+    "error": [
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:39:13: error: conflicting types for 'mqtt_connect'; have 'void(void)'",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:50:28: error: incompatible types when assigning to type 'struct mqtt_utf8' from type 'char *'",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:56:15: error: 'struct mqtt_client' has no member named 'connect_msg'",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:57:15: error: 'struct mqtt_client' has no member named 'connect_msg'",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:58:15: error: 'struct mqtt_client' has no member named 'connect_msg'",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:59:15: error: 'struct mqtt_client' has no member named 'connect_msg'",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:60:15: error: 'struct mqtt_client' has no member named 'connect_msg'",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:61:15: error: 'struct mqtt_client' has no member named 'connect_msg'",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:62:15: error: 'struct mqtt_client' has no member named 'connect_msg'",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:63:15: error: 'struct mqtt_client' has no member named 'connect_msg'",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:64:15: error: 'struct mqtt_client' has no member named 'connect_msg'",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:65:15: error: 'struct mqtt_client' has no member named 'connect_msg'",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:66:15: error: 'struct mqtt_client' has no member named 'connect_msg'",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:68:15: error: too many arguments to function 'mqtt_connect'",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:68:15: error: void value not ignored as it ought to be"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a Zephyr program for the ESP32 that connects to an MQTT broker at 47.102.103.1:1883 to publish state (\u201dwork or not work\u201d) each five seconds. Do not use emcute lib."
+        ]
+    ],
+    "generation": "\n#include <zephyr/kernel.h>\n#include <zephyr/device.h>\n#include <zephyr/drivers/gpio.h>\n#include <zephyr/net/socket.h>\n#include <zephyr/net/mqtt.h>\n#include <zephyr/net/net_mgmt.h>\n#include <zephyr/net/net_if.h>\n#include <zephyr/net/wifi_mgmt.h>\n\n#define WIFI_SSID \"your_wifi_ssid\"\n#define WIFI_PSK \"your_wifi_password\"\n\n#define MQTT_BROKER_IP \"47.102.103.1\"\n#define MQTT_BROKER_PORT 1883\n#define MQTT_TOPIC \"state\"\n\n#define SLEEP_TIME_MS 5000\n\nstatic struct mqtt_client client_ctx;\nstatic uint8_t rx_buffer[100];\nstatic uint8_t tx_buffer[100];\nstatic struct mqtt_publish_param publish_param;\n\nstatic void wifi_connect(void) {\n    struct net_if *iface = net_if_get_default();\n    struct wifi_connect_req_params params = {\n        .ssid = WIFI_SSID,\n        .ssid_length = strlen(WIFI_SSID),\n        .psk = WIFI_PSK,\n        .psk_length = strlen(WIFI_PSK),\n        .channel = 0,\n        .security = WIFI_SECURITY_TYPE_PSK,\n    };\n\n    net_mgmt(NET_REQUEST_WIFI_CONNECT, iface, &params, sizeof(params));\n}\n\nstatic void mqtt_connect(void) {\n    struct sockaddr_in broker_addr = {\n        .sin_family = AF_INET,\n        .sin_port = htons(MQTT_BROKER_PORT),\n    };\n\n    inet_pton(AF_INET, MQTT_BROKER_IP, &broker_addr.sin_addr);\n\n    mqtt_client_init(&client_ctx);\n\n    client_ctx.broker = &broker_addr;\n    client_ctx.client_id = \"zephyr_client\";\n    client_ctx.protocol_version = MQTT_VERSION_3_1_1;\n    client_ctx.clean_session = 1;\n    client_ctx.keepalive = 60;\n    client_ctx.user_name = NULL;\n    client_ctx.password = NULL;\n    client_ctx.connect_msg.will_topic = NULL;\n    client_ctx.connect_msg.will_msg = NULL;\n    client_ctx.connect_msg.will_qos = 0;\n    client_ctx.connect_msg.will_retain = 0;\n    client_ctx.connect_msg.will_msg_len = 0;\n    client_ctx.connect_msg.client_id = client_ctx.client_id;\n    client_ctx.connect_msg.user_name = client_ctx.user_name;\n    client_ctx.connect_msg.password = client_ctx.password;\n    client_ctx.connect_msg.clean_session = client_ctx.clean_session;\n    client_ctx.connect_msg.keepalive = client_ctx.keepalive;\n    client_ctx.connect_msg.reserved = 0;\n\n    int ret = mqtt_connect(&client_ctx);\n    if (ret) {\n        printk(\"MQTT connect failed: %d\\n\", ret);\n        return;\n    }\n\n    printk(\"MQTT connected\\n\");\n}\n\nstatic void publish_state(const char *state) {\n    publish_param.message.topic.qos = MQTT_QOS_1_AT_LEAST_ONCE;\n    publish_param.message.topic.topic.utf8 = MQTT_TOPIC;\n    publish_param.message.topic.topic.size = strlen(MQTT_TOPIC);\n    publish_param.message.payload.data = state;\n    publish_param.message.payload.len = strlen(state);\n    publish_param.message_id = 1U;\n\n    int ret = mqtt_publish(&client_ctx, &publish_param);\n    if (ret) {\n        printk(\"MQTT publish failed: %d\\n\", ret);\n    } else {\n        printk(\"MQTT state published: %s\\n\", state);\n    }\n}\n\nint main(void) {\n    wifi_connect();\n    mqtt_connect();\n\n    while (1) {\n        publish_state(\"work\");\n        k_sleep(K_MSEC(SLEEP_TIME_MS));\n        publish_state(\"not work\");\n        k_sleep(K_MSEC(SLEEP_TIME_MS));\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

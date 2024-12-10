@@ -1,0 +1,18 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32 to achieve interrupt handling. The program uses atomic variables to verify if disabling and restoring interrupts works correctly. You should use irq but not use gpio interface. "
+        ],
+        [
+            "assistant",
+            "prefix: The goal of this code is to demonstrate handling interrupts on an ESP32 using RIOT OS. We will make use of the irq module to toggle interrupt states and use an atomic boolean variable to verify the current state (enabled or disabled). This approach does not use the GPIO interface as requested. We start by including the necessary header file 'irq_arch.h'. The 'toggle_irq' function toggles the state of the interrupt by first checking if the interrupts are enabled or disabled using 'irq_is_enabled'. Based on the state, it either disables the interrupts using 'irq_disable' or assumes they are enabled. The main function initializes the program by printing the initial interrupt state and then toggles the interrupt state several times, printing the status after each toggle. \n block: #include <irq_arch.h>\n#include <stdio.h>\n\nvolatile bool interrupt_enabled = false;\n\nvoid toggle_irq(void) {\n    if (interrupt_enabled) {\n        irq_disable();\n        printf(\"Interrupts disabled\\n\");\n    } else {\n        irq_is_enabled();\n        printf(\"Interrupts enabled\\n\");\n    }\n    interrupt_enabled = !interrupt_enabled;\n}\n\nint main(void) {\n    printf(\"Initial state: %s\\n\", irq_is_enabled() ? \"enabled\" : \"disabled\");\n    \n    // Toggle interrupts a few times to see results\n    for (int i = 0; i < 5; i++) {\n        toggle_irq();\n    }\n\n    return 0;\n} \n"
+        ]
+    ],
+    "generation": "#include <irq_arch.h>\n#include <stdio.h>\n\nvolatile bool interrupt_enabled = false;\n\nvoid toggle_irq(void) {\n    if (interrupt_enabled) {\n        irq_disable();\n        printf(\"Interrupts disabled\\n\");\n    } else {\n        irq_is_enabled();\n        printf(\"Interrupts enabled\\n\");\n    }\n    interrupt_enabled = !interrupt_enabled;\n}\n\nint main(void) {\n    printf(\"Initial state: %s\\n\", irq_is_enabled() ? \"enabled\" : \"disabled\");\n    \n    // Toggle interrupts a few times to see results\n    for (int i = 0; i < 5; i++) {\n        toggle_irq();\n    }\n\n    return 0;\n}",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

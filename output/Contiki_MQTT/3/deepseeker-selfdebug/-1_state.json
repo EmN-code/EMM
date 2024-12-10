@@ -1,0 +1,20 @@
+{
+    "error": [
+        "hello-world.c:3:10: fatal error: dev/uart0.h: No such file or directory"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a Contiki program for the NRF52840 that connects to an MQTT broker at 47.102.103.1:1883 to publish state (\u201dwork or not work\u201d) each five seconds."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: ['hello-world.c:8:10: fatal error: dev/uart0.h: No such file or directory'] and Invoke the code tool to solve the error and structure the output with a prefix and code block."
+        ]
+    ],
+    "generation": "\n#include \"contiki.h\"\n#include \"dev/uart0.h\"  // Ensure this header file is included\n#include \"lib/sensors.h\"\n#include \"lib/random.h\"\n#include \"net/ip/uip.h\"\n#include \"net/ip/uip-ds6.h\"\n#include \"net/ip/uip-debug.h\"\n#include \"net/ip/simple-udp.h\"\n#include \"net/ip/tcpip.h\"\n#include \"net/ip/resolv.h\"\n#include \"net/ip/uiplib.h\"\n#include \"net/ip/psock.h\"\n#include \"net/ip/tcp-socket.h\"\n#include \"net/ip/mqtt.h\"\n#include \"sys/etimer.h\"\n#include \"sys/timer.h\"\n#include \"sys/rtimer.h\"\n#include \"sys/ctimer.h\"\n#include \"sys/log.h\"\n\n#define LOG_MODULE \"MQTT Client\"\n#define LOG_LEVEL LOG_LEVEL_INFO\n\n#define MQTT_BROKER_IP \"47.102.103.1\"\n#define MQTT_BROKER_PORT 1883\n#define MQTT_TOPIC \"state\"\n\nstatic struct etimer et;\nstatic struct mqtt_connection mqtt_conn;\nstatic char mqtt_buffer[128];\n\nPROCESS(mqtt_client_process, \"MQTT Client Process\");\nAUTOSTART_PROCESSES(&mqtt_client_process);\n\nstatic void\nmqtt_publish(const char *topic, const char *payload)\n{\n  mqtt_publish_to_topic(&mqtt_conn, topic, payload, strlen(payload), 0, 0);\n}\n\nPROCESS_THREAD(mqtt_client_process, ev, data)\n{\n  static struct etimer et;\n  static char state[16];\n\n  PROCESS_BEGIN();\n\n  LOG_INFO(\"Connecting to MQTT broker at %s:%d\\n\", MQTT_BROKER_IP, MQTT_BROKER_PORT);\n\n  mqtt_conn.ipaddr = uip_ipaddr_u32(uip_htonl(0x2F6666FF)); // Example IP address\n  mqtt_conn.port = MQTT_BROKER_PORT;\n  mqtt_conn.keepalive = 60;\n  mqtt_conn.client_id = \"nrf52840\";\n  mqtt_conn.username = NULL;\n  mqtt_conn.password = NULL;\n  mqtt_conn.will_topic = NULL;\n  mqtt_conn.will_message = NULL;\n  mqtt_conn.will_qos = 0;\n  mqtt_conn.will_retain = 0;\n  mqtt_conn.clean_session = 1;\n\n  mqtt_connect(&mqtt_conn);\n\n  etimer_set(&et, CLOCK_SECOND * 5);\n\n  while(1) {\n    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));\n\n    if(random_rand() % 2 == 0) {\n      strcpy(state, \"work\");\n    } else {\n      strcpy(state, \"not work\");\n    }\n\n    LOG_INFO(\"Publishing state: %s\\n\", state);\n    mqtt_publish(MQTT_TOPIC, state);\n\n    etimer_reset(&et);\n  }\n\n  PROCESS_END();\n}\n\nint main(void)\n{\n  PROCESS_PAUSE();\n  return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 11
+}

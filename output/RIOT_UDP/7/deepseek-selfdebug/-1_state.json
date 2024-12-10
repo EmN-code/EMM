@@ -1,0 +1,18 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to a UDP server at\u00a0`47.102.103.1:20001`\u00a0to send device state (\u201dwork or not work\u201d) by UDP method every five seconds."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: [\"/root/RIOT/examples/LLM_Gen/main.c:22:14: error: implicit declaration of function 'inet_pton' [-Werror=implicit-function-declaration]\"] and Invoke the code tool to solve the error and structure the output with a prefix and code block."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <arpa/inet.h>  // Include this header for inet_pton\n#include \"xtimer.h\"\n#include \"net/sock/udp.h\"\n\n#define SERVER_IP \"47.102.103.1\"\n#define SERVER_PORT 20001\n#define INTERVAL_MS (5 * 1000U)  // 5 seconds interval\n\nstatic sock_udp_t sock;\nstatic sock_udp_ep_t remote;\n\nvoid send_state(const char *state) {\n    const char *message = state;\n    ssize_t res = sock_udp_send(&sock, message, strlen(message), &remote);\n    if (res < 0) {\n        printf(\"Failed to send message: %s\\n\", state);\n    } else {\n        printf(\"Sent: %s\\n\", state);\n    }\n}\n\nint main(void) {\n    // Initialize the remote endpoint\n    remote.family = AF_INET;\n    remote.port = SERVER_PORT;\n    inet_pton(AF_INET, SERVER_IP, &remote.addr.ipv4);\n\n    // Initialize the UDP socket\n    if (sock_udp_create(&sock, NULL, &remote, 0) < 0) {\n        printf(\"Failed to create UDP socket\\n\");\n        return 1;\n    }\n\n    while (1) {\n        send_state(\"work\");\n        xtimer_sleep(INTERVAL_MS / 1000);\n        send_state(\"not work\");\n        xtimer_sleep(INTERVAL_MS / 1000);\n    }\n\n    // Clean up\n    sock_udp_close(&sock);\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 6
+}

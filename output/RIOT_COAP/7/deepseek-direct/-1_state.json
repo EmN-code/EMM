@@ -1,0 +1,16 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:5:10: fatal error: net/gnrc/ipv6/netif.h: No such file or directory"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32, which  sends a CoAP request to an COAP server. The program is configured to send CoAP POST requests \"Hello, COAP Cloud\" to the COAP server at IP address \"47.102.103.1\" and port 5683, with the URI path \"/coap/test\". "
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include \"net/gnrc/netif.h\"\n#include \"net/gnrc/ipv6/netif.h\"\n#include \"net/gnrc/udp.h\"\n#include \"net/gnrc/coap.h\"\n#include \"net/gnrc.h\"\n#include \"net/sock/udp.h\"\n#include \"net/sock/ip.h\"\n#include \"net/ipv6/addr.h\"\n#include \"xtimer.h\"\n\n#define SERVER_IP \"47.102.103.1\"\n#define SERVER_PORT 5683\n#define URI_PATH \"/coap/test\"\n#define MESSAGE \"Hello, COAP Cloud\"\n\nstatic gnrc_pktsnip_t *coap_send_request(gnrc_netif_t *netif, ipv6_addr_t *server_addr, uint16_t port, const char *uri_path, const char *payload)\n{\n    gnrc_pktsnip_t *pkt, *payload_pkt, *coap_pkt;\n    coap_pkt_t coap_pkt_struct;\n    uint8_t type = COAP_TYPE_CON;\n    uint8_t code = COAP_METHOD_POST;\n    uint8_t token[2] = {0x01, 0x02};\n    uint8_t token_len = sizeof(token);\n    uint8_t options[2] = {COAP_OPT_URI_PATH, COAP_OPT_URI_PATH};\n    uint8_t options_len[2] = {strlen(URI_PATH), 0};\n    uint8_t *options_data[2] = {(uint8_t *)URI_PATH, NULL};\n\n    payload_pkt = gnrc_pktbuf_add(NULL, payload, strlen(payload), GNRC_NETTYPE_UNDEF);\n    if (payload_pkt == NULL) {\n        return NULL;\n    }\n\n    coap_pkt = gnrc_coap_build(&coap_pkt_struct, type, code, token, token_len, options, options_len, options_data, 1, payload_pkt);\n    if (coap_pkt == NULL) {\n        gnrc_pktbuf_release(payload_pkt);\n        return NULL;\n    }\n\n    pkt = gnrc_ipv6_hdr_build(NULL, NULL, server_addr, netif);\n    if (pkt == NULL) {\n        gnrc_pktbuf_release(coap_pkt);\n        return NULL;\n    }\n\n    pkt = gnrc_udp_hdr_build(pkt, (uint16_t)port, (uint16_t)port);\n    if (pkt == NULL) {\n        gnrc_pktbuf_release(coap_pkt);\n        return NULL;\n    }\n\n    gnrc_pktbuf_add(pkt, coap_pkt->data, coap_pkt->size, GNRC_NETTYPE_COAP);\n    gnrc_pktbuf_release(coap_pkt);\n\n    return pkt;\n}\n\nint main(void)\n{\n    gnrc_netif_t *netif = NULL;\n    ipv6_addr_t server_addr;\n    gnrc_pktsnip_t *pkt;\n\n    puts(\"CoAP POST request example\");\n\n    netif = gnrc_netif_iter(NULL);\n    if (netif == NULL) {\n        puts(\"No network interface found\");\n        return 1;\n    }\n\n    if (ipv6_addr_from_str(&server_addr, SERVER_IP) == NULL) {\n        puts(\"Error parsing server IP address\");\n        return 1;\n    }\n\n    pkt = coap_send_request(netif, &server_addr, SERVER_PORT, URI_PATH, MESSAGE);\n    if (pkt == NULL) {\n        puts(\"Error building CoAP request\");\n        return 1;\n    }\n\n    if (gnrc_netapi_send(netif->pid, pkt) < 1) {\n        puts(\"Error sending CoAP request\");\n        gnrc_pktbuf_release(pkt);\n        return 1;\n    }\n\n    gnrc_pktbuf_release(pkt);\n    puts(\"CoAP request sent\");\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

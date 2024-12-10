@@ -1,0 +1,16 @@
+{
+    "error": [
+        "hello-world.c:4:10: fatal error: dev/dht11.h: No such file or directory"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop Contiki code on an NRF52840. It read dht11 each five seconds and turn on a rgb_led."
+        ]
+    ],
+    "generation": "\n#include \"contiki.h\"\n#include \"dev/leds.h\"\n#include \"dev/dht11.h\"\n#include \"dev/nrf52840/nrf52840-gpio.h\"\n#include <stdio.h>\n\n#define DHT11_PIN 2  // Assuming DHT11 is connected to GPIO pin 2\n#define RGB_LED_PIN 3  // Assuming RGB LED is connected to GPIO pin 3\n\nPROCESS(dht11_rgb_process, \"DHT11 and RGB LED Process\");\nAUTOSTART_PROCESSES(&dht11_rgb_process);\n\nstatic void init_gpio(void) {\n    nrf52840_gpio_configure(DHT11_PIN, NRF_GPIO_PIN_DIR_INPUT, NRF_GPIO_PIN_INPUT_CONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0S1, NRF_GPIO_PIN_NOSENSE);\n    nrf52840_gpio_configure(RGB_LED_PIN, NRF_GPIO_PIN_DIR_OUTPUT, NRF_GPIO_PIN_INPUT_DISCONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0S1, NRF_GPIO_PIN_NOSENSE);\n}\n\nPROCESS_THREAD(dht11_rgb_process, ev, data)\n{\n    static struct etimer timer;\n    static int temperature, humidity;\n\n    PROCESS_BEGIN();\n\n    init_gpio();\n\n    etimer_set(&timer, CLOCK_SECOND * 5);  // Set timer to 5 seconds\n\n    while(1) {\n        PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&timer));\n\n        if(dht11_read(&temperature, &humidity, DHT11_PIN) == DHT11_SUCCESS) {\n            printf(\"Temperature: %d C, Humidity: %d %%\\n\", temperature, humidity);\n            nrf52840_gpio_set(RGB_LED_PIN);  // Turn on RGB LED\n        } else {\n            printf(\"Failed to read DHT11 sensor\\n\");\n        }\n\n        etimer_reset(&timer);\n    }\n\n    PROCESS_END();\n}\n\nint main(void)\n{\n    process_init();\n    process_start(&etimer_process, NULL);\n    process_start(&dht11_rgb_process, NULL);\n    autostart_start(autostart_processes);\n\n    while(1) {\n        process_run();\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

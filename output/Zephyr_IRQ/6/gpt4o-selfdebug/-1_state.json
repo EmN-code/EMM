@@ -1,0 +1,18 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop Zephyr code on an ESP32 to achieve interrupt handling. The program uses atomic variables to verify if disabling and restoring interrupts works correctly. You should use irq but not use gpio interface. "
+        ],
+        [
+            "assistant",
+            "prefix: To develop a Zephyr code for an ESP32 to handle interrupts without using the GPIO interface, we can focus on using interrupts directly and verifying their behavior via atomic variables. The goal is to implement a function that configures interrupt handling and employs irq_lock and irq_unlock to simulate critical sections where interrupts are disabled and restored. Atomic variables are used to track the interrupt status. This code is executable and organized to print debug statements reflecting the status of the interrupt handler. \n block: #include <zephyr/types.h>\n#include <zephyr/kernel.h>\n#include <zephyr/device.h>\n\nvoid interrupt_handler(const void *arg) {\n    printk(\"Interrupt triggered!\\n\");\n    // Perform interrupt-related operations here.\n}\n\nvoid configure_interrupt(void) {\n    int key;\n    atomic_t interrupt_status = ATOMIC_INIT(false);\n    \n    // Lock interrupts\n    key = irq_lock();\n\n    // Simulate critical section\n    printk(\"Critical section start.\\n\");\n    atomic_set(&interrupt_status, true);\n    printk(\"Interrupt status set to %d\\n\", atomic_get(&interrupt_status));\n    \n    // Unlock interrupts\n    irq_unlock(key);\n    printk(\"Critical section end.\\n\");\n    printk(\"Interrupts restored.\\n\");\n}\n\nint main(void) {\n    printk(\"ESP32 Zephyr Interrupt Handling Application.\\n\");\n    configure_interrupt();\n    return 0;\n} \n"
+        ]
+    ],
+    "generation": "#include <zephyr/types.h>\n#include <zephyr/kernel.h>\n#include <zephyr/device.h>\n\nvoid interrupt_handler(const void *arg) {\n    printk(\"Interrupt triggered!\\n\");\n    // Perform interrupt-related operations here.\n}\n\nvoid configure_interrupt(void) {\n    int key;\n    atomic_t interrupt_status = ATOMIC_INIT(false);\n    \n    // Lock interrupts\n    key = irq_lock();\n\n    // Simulate critical section\n    printk(\"Critical section start.\\n\");\n    atomic_set(&interrupt_status, true);\n    printk(\"Interrupt status set to %d\\n\", atomic_get(&interrupt_status));\n    \n    // Unlock interrupts\n    irq_unlock(key);\n    printk(\"Critical section end.\\n\");\n    printk(\"Interrupts restored.\\n\");\n}\n\nint main(void) {\n    printk(\"ESP32 Zephyr Interrupt Handling Application.\\n\");\n    configure_interrupt();\n    return 0;\n}",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

@@ -1,0 +1,18 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32, where one thread sends messages to another with different priorities. We also need to achieve inter-thread communication using\u00a0msg_t."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: [\"/root/RIOT/examples/LLM_Gen/main.c:52:9: error: 'stack_buffer' undeclared (first use in this function)\"] and Invoke the code tool to solve the error and structure the output with a prefix and code block."
+        ]
+    ],
+    "generation": "\n#include \"thread.h\"\n#include \"msg.h\"\n#include \"xtimer.h\"\n\n#define STACKSIZE (THREAD_STACKSIZE_DEFAULT)\n#define PRIORITY_HIGH (THREAD_PRIORITY_MAIN - 1)\n#define PRIORITY_LOW (THREAD_PRIORITY_MAIN + 1)\n\nkernel_pid_t high_priority_thread_pid;\nkernel_pid_t low_priority_thread_pid;\n\nchar high_priority_stack[STACKSIZE];\nchar low_priority_stack[STACKSIZE];\n\nvoid *high_priority_thread(void *arg)\n{\n    (void)arg;\n    msg_t msg;\n\n    while (1) {\n        msg_receive(&msg);\n        printf(\"High priority thread received message: %s\\n\", (char *)msg.content.ptr);\n    }\n\n    return NULL;\n}\n\nvoid *low_priority_thread(void *arg)\n{\n    (void)arg;\n    msg_t msg;\n\n    while (1) {\n        msg_receive(&msg);\n        printf(\"Low priority thread received message: %s\\n\", (char *)msg.content.ptr);\n    }\n\n    return NULL;\n}\n\nint main(void)\n{\n    msg_t msg;\n\n    // Create high priority thread\n    high_priority_thread_pid = thread_create(high_priority_stack, sizeof(high_priority_stack),\n                                             PRIORITY_HIGH, THREAD_CREATE_STACKTEST,\n                                             high_priority_thread, NULL, \"high_priority\");\n\n    // Create low priority thread\n    low_priority_thread_pid = thread_create(low_priority_stack, sizeof(low_priority_stack),\n                                            PRIORITY_LOW, THREAD_CREATE_STACKTEST,\n                                            low_priority_thread, NULL, \"low_priority\");\n\n    // Send messages to threads\n    msg.content.ptr = \"Message to high priority thread\";\n    msg_send(&msg, high_priority_thread_pid);\n\n    msg.content.ptr = \"Message to low priority thread\";\n    msg_send(&msg, low_priority_thread_pid);\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 2
+}

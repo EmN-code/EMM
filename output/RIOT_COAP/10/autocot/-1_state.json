@@ -1,0 +1,18 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32, which  sends a CoAP request to an COAP server. The program is configured to send CoAP POST requests \"Hello, COAP Cloud\" to the COAP server at IP address \"47.102.103.1\" and port 5683, with the URI path \"/coap/test\". "
+        ],
+        [
+            "assistant",
+            "prefix: This code sends a CoAP POST request from an ESP32 running RIOT OS to a CoAP server using the gcoap library. It constructs a POST request with the message \"Hello, COAP Cloud\" targeting the URI \"/coap/test\" at the server's IP address \"47.102.103.1\" on port 5683. The code initializes the CoAP library, sets up the request, and sends it. \n block: #include \"thread_config.h\"\n#include \"net/nanocoap/cache.h\"\n#include <stdlib.h>\n#include <stdio.h>\n#include <string.h>\n#include \"net/gcoap.h\"\n\n// Function to send CoAP POST request\nstatic void send_coap_post(void) {\n    // Buffer for CoAP message\n    uint8_t buf[CONFIG_GCOAP_PDU_BUF_SIZE];\n    coap_pkt_t pdu;\n\n    // Initialize the CoAP packet with POST method and target URI\n    gcoap_req_init(&pdu, buf, CONFIG_GCOAP_PDU_BUF_SIZE, COAP_METHOD_POST, \"/coap/test\");\n    size_t len = strlen(\"Hello, COAP Cloud\") + coap_opt_finish(&pdu, COAP_OPT_FINISH_NONE);\n\n    // Add payload\n    memcpy(pdu.payload, \"Hello, COAP Cloud\", strlen(\"Hello, COAP Cloud\"));\n    pdu.payload_len = strlen(\"Hello, COAP Cloud\");\n\n    sock_udp_ep_t remote = { .family = AF_INET6, .port = CONFIG_GCOAP_PORT };\n    ipv6_addr_from_str((ipv6_addr_t *)&remote.addr, \"47.102.103.1\");\n\n    printf(\"Sending CoAP POST request to COAP server\\n\");\n    gcoap_req_send(buf, len, &remote, NULL, NULL, GCOAP_SOCKET_TYPE_UDP);\n}\n\nint main(void) {\n    // Initialize the CoAP library\n    gcoap_init();\n\n    // Send a CoAP POST request\n    send_coap_post();\n\n    return 0;\n} \n"
+        ]
+    ],
+    "generation": "#include \"thread_config.h\"\n#include \"net/nanocoap/cache.h\"\n#include <stdlib.h>\n#include <stdio.h>\n#include <string.h>\n#include \"net/gcoap.h\"\n\n// Function to send CoAP POST request\nstatic void send_coap_post(void) {\n    // Buffer for CoAP message\n    uint8_t buf[CONFIG_GCOAP_PDU_BUF_SIZE];\n    coap_pkt_t pdu;\n\n    // Initialize the CoAP packet with POST method and target URI\n    gcoap_req_init(&pdu, buf, CONFIG_GCOAP_PDU_BUF_SIZE, COAP_METHOD_POST, \"/coap/test\");\n    size_t len = strlen(\"Hello, COAP Cloud\") + coap_opt_finish(&pdu, COAP_OPT_FINISH_NONE);\n\n    // Add payload\n    memcpy(pdu.payload, \"Hello, COAP Cloud\", strlen(\"Hello, COAP Cloud\"));\n    pdu.payload_len = strlen(\"Hello, COAP Cloud\");\n\n    sock_udp_ep_t remote = { .family = AF_INET6, .port = CONFIG_GCOAP_PORT };\n    ipv6_addr_from_str((ipv6_addr_t *)&remote.addr, \"47.102.103.1\");\n\n    printf(\"Sending CoAP POST request to COAP server\\n\");\n    gcoap_req_send(buf, len, &remote, NULL, NULL, GCOAP_SOCKET_TYPE_UDP);\n}\n\nint main(void) {\n    // Initialize the CoAP library\n    gcoap_init();\n\n    // Send a CoAP POST request\n    send_coap_post();\n\n    return 0;\n}",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

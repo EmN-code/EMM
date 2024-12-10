@@ -1,0 +1,20 @@
+{
+    "error": [
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:2:10: fatal error: zephyr.h: No such file or directory\r"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop Zephyr code on an ESP32. It read MMA8x5x every 5 seconds and uses Non-Volatile Storage (NVS) to store the read value persistently. "
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: ['E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:2:10: fatal error: zephyr.h: No such file or directory\\r'] and Invoke the code tool to solve the error and structure the output with a prefix and code block."
+        ]
+    ],
+    "generation": "\n#include <zephyr.h>\n#include <device.h>\n#include <drivers/i2c.h>\n#include <storage/flash_map.h>\n#include <fs/nvs.h>\n#include <logging/log.h>\n\n#define MMA8x5x_I2C_ADDRESS 0x1D\n#define MMA8x5x_REG_OUT_X_MSB 0x01\n#define NVS_PARTITION_ID FIXED_PARTITION_ID(storage_partition)\n#define NVS_PARTITION FIXED_PARTITION_DEVICE(storage_partition)\n#define NVS_SECTOR_SIZE 4096\n#define NVS_NUM_SECTORS 4\n\nLOG_MODULE_REGISTER(main);\n\nstruct nvs_fs fs = {\n    .sector_size = NVS_SECTOR_SIZE,\n    .sector_count = NVS_NUM_SECTORS,\n    .offset = FIXED_PARTITION_OFFSET(storage_partition),\n};\n\nvoid read_mma8x5x(const struct device *i2c_dev, int16_t *x, int16_t *y, int16_t *z) {\n    uint8_t buf[6];\n    struct i2c_msg msgs[2] = {\n        {\n            .buf = &buf[0],\n            .len = 1,\n            .flags = I2C_MSG_WRITE | I2C_MSG_RESTART,\n        },\n        {\n            .buf = &buf[1],\n            .len = 5,\n            .flags = I2C_MSG_READ | I2C_MSG_STOP,\n        },\n    };\n\n    buf[0] = MMA8x5x_REG_OUT_X_MSB;\n\n    if (i2c_transfer(i2c_dev, msgs, 2, MMA8x5x_I2C_ADDRESS) != 0) {\n        LOG_ERR(\"Failed to read from MMA8x5x\");\n        return;\n    }\n\n    *x = (buf[1] << 8) | buf[2];\n    *y = (buf[3] << 8) | buf[4];\n    *z = (buf[5] << 8) | buf[6];\n}\n\nvoid store_value_in_nvs(struct nvs_fs *fs, uint16_t id, int16_t value) {\n    int ret = nvs_write(fs, id, &value, sizeof(value));\n    if (ret < 0) {\n        LOG_ERR(\"Failed to write to NVS: %d\", ret);\n    } else {\n        LOG_INF(\"Value stored in NVS: %d\", value);\n    }\n}\n\nint main(void) {\n    const struct device *i2c_dev = device_get_binding(\"I2C_0\");\n    if (!i2c_dev) {\n        LOG_ERR(\"I2C device not found\");\n        return -1;\n    }\n\n    int ret = nvs_mount(&fs);\n    if (ret) {\n        LOG_ERR(\"NVS mount failed: %d\", ret);\n        return -1;\n    }\n\n    while (1) {\n        int16_t x, y, z;\n        read_mma8x5x(i2c_dev, &x, &y, &z);\n        LOG_INF(\"MMA8x5x: x=%d, y=%d, z=%d\", x, y, z);\n\n        store_value_in_nvs(&fs, 1, x);\n        store_value_in_nvs(&fs, 2, y);\n        store_value_in_nvs(&fs, 3, z);\n\n        k_sleep(K_SECONDS(5));\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 10
+}

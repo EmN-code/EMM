@@ -1,0 +1,20 @@
+{
+    "error": [
+        "hello-world.c:2:10: fatal error: net/mqtt.h: No such file or directory"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a Contiki program for the NRF52840 that connects to an MQTT broker at 47.102.103.1:1883 to publish state (\u201dwork or not work\u201d) each five seconds."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: ['hello-world.c:3:10: fatal error: net/mqtt.h: No such file or directory'] and Invoke the code tool to solve the error and structure the output with a prefix and code block."
+        ]
+    ],
+    "generation": "\n#include \"net/mqtt.h\"\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 11
+}

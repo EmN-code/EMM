@@ -1,0 +1,18 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32. It reads the DHT11 every 5 seconds and turns on an LED warning when the temperature exceeds a threshold."
+        ],
+        [
+            "assistant",
+            "prefix: This code for an ESP32 using RIOT OS reads temperature and humidity data from a DHT11 sensor every 5 seconds. It then evaluates if the temperature surpasses a defined threshold (here set to 30 degrees Celsius). When the threshold is exceeded, an LED connected to a specific GPIO pin is turned on to signal a warning; otherwise, the LED is turned off. The GPIO and DHT libraries are utilized to control the pin and read sensor data, respectively. The xtimer library enables sleeping the thread for the given duration between readings. \n block: #include <stdio.h>  \n#include \"xtimer.h\"\n#include \"thread.h\"\n#include \"dht.h\"\n#include \"periph/gpio.h\"\n\n#define LED_PIN GPIO_PIN(0, 2)  // Assuming GPIO pin for the LED\n#define TEMP_THRESHOLD 30       // Threshold temperature in Celsius\n#define SLEEP_DURATION (5U * US_PER_SEC)  // 5 seconds\n\ndht_t dev;\n\nvoid read_and_warn(void){\n    int16_t temp, hum;\n    \n    if (dht_read(&dev, &temp, &hum) != DHT_OK) {\n        printf(\"Error reading DHT sensor\\n\");\n        return;\n    }\n    printf(\"Temperature: %d.%d\u00b0C, Humidity: %d.%d%%\\n\", temp / 10, temp % 10, hum / 10, hum % 10);\n\n    if (temp / 10 > TEMP_THRESHOLD) {\n        gpio_set(LED_PIN);\n        printf(\"Warning: Temperature exceeds threshold! LED turned ON\\n\");\n    } else {\n        gpio_clear(LED_PIN);\n        printf(\"Temperature is below threshold. LED turned OFF\\n\");\n    }\n}\n\nint main(void) {\n    gpio_init(LED_PIN, GPIO_OUT);\n\n    dht_params_t params;\n    params.pin = GPIO_PIN(0, 3);  // Assume pin for DHT\n    params.type = DHT11;\n\n    if (dht_init(&dev, &params) != DHT_OK) {\n        printf(\"Error initializing DHT sensor\\n\");\n        return 1;\n    }\n    \n    while (1) {\n        read_and_warn();\n        xtimer_sleep(SLEEP_DURATION);\n    }\n\n    return 0;\n} \n"
+        ]
+    ],
+    "generation": "#include <stdio.h>  \n#include \"xtimer.h\"\n#include \"thread.h\"\n#include \"dht.h\"\n#include \"periph/gpio.h\"\n\n#define LED_PIN GPIO_PIN(0, 2)  // Assuming GPIO pin for the LED\n#define TEMP_THRESHOLD 30       // Threshold temperature in Celsius\n#define SLEEP_DURATION (5U * US_PER_SEC)  // 5 seconds\n\ndht_t dev;\n\nvoid read_and_warn(void){\n    int16_t temp, hum;\n    \n    if (dht_read(&dev, &temp, &hum) != DHT_OK) {\n        printf(\"Error reading DHT sensor\\n\");\n        return;\n    }\n    printf(\"Temperature: %d.%d\u00b0C, Humidity: %d.%d%%\\n\", temp / 10, temp % 10, hum / 10, hum % 10);\n\n    if (temp / 10 > TEMP_THRESHOLD) {\n        gpio_set(LED_PIN);\n        printf(\"Warning: Temperature exceeds threshold! LED turned ON\\n\");\n    } else {\n        gpio_clear(LED_PIN);\n        printf(\"Temperature is below threshold. LED turned OFF\\n\");\n    }\n}\n\nint main(void) {\n    gpio_init(LED_PIN, GPIO_OUT);\n\n    dht_params_t params;\n    params.pin = GPIO_PIN(0, 3);  // Assume pin for DHT\n    params.type = DHT11;\n\n    if (dht_init(&dev, &params) != DHT_OK) {\n        printf(\"Error initializing DHT sensor\\n\");\n        return 1;\n    }\n    \n    while (1) {\n        read_and_warn();\n        xtimer_sleep(SLEEP_DURATION);\n    }\n\n    return 0;\n}",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

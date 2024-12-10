@@ -1,0 +1,38 @@
+**Pattern Extraction:**
+
+### curr_FSMs Pattern:
+1. **Network Initialization**: INIT -> NETWORK_INIT (on THREAD_CREATE).
+2. **MQTT Initialization**: NETWORK_INIT -> MQTT_INIT (on NETWORK_INIT_OK).
+3. **Publishing Loop**: MQTT_INIT -> PUBLISH_LOOP (on MQTT_CONNECT_SUCCESS).
+4. **Error Handling**: MQTT_INIT -> ERROR (on MQTT_CONNECT_FAIL), NETWORK_INIT -> ERROR (on NETWORK_INIT_FAIL).
+5. **Recovery**: ERROR -> NETWORK_INIT (on RECONNECT).
+
+### ref_FSMs Pattern:
+1. **MQTT Initialization**: INIT -> MQTT_BROKER_CONNECTION (on MQTTClient Initialized).
+2. **Connection Success**: MQTT_BROKER_CONNECTION -> PUBLISH_LOOP (on NetworkConnect Success & MQTTConnect Success).
+3. **Publishing State**: PUBLISH_LOOP -> PUBLISH_STATE (on 5 Seconds Elapsed).
+4. **MQTT Publish and Recovery**: PUBLISH_STATE -> PUBLISH_LOOP (on MQTTPublish Success), PUBLISH_STATE -> NETWORK_RECONNECT (on MQTTPublish Fail) and reconnection involves repeated connection attempts.
+5. **Error Recovery**: NETWORK_RECONNECT -> PUBLISH_LOOP (on Reconnect Attempt Success), NETWORK_RECONNECT -> MQTT_BROKER_CONNECTION (on Reconnect Attempt Fail).
+
+**Analysis of Differences:**
+- The curr_FSMs does not include specific states for publishing (PUBLISH_STATE) and lacks a detailed network reconnection mechanism (NETWORK_RECONNECT).
+- The curr_FSMs directly jumps from MQTT initialization to the publishing loop without checking the status of messages being published.
+- There is no reconnection loop for failed MQTT and network connections in curr_FSMs, while ref_FSMs emphasizes retry mechanisms for both network and MQTT connections.
+- Error management is simplified in curr_FSMs, leading to potentially unresolved errors if reconnection fails.
+
+**Issues in curr_code and Corrective Measures:**
+1. **Lack of Network and MQTT Retry Logic**:
+   - **Issue**: After MQTTConnect or NetworkConnect failure, the code does not attempt reconnection periodically.
+   - **Corrective Measure**: Implement a retry mechanism with exponential backoff for both MQTT and Network connections.
+
+2. **Direct Transition in Publishing Loop**:
+   - **Issue**: The PUBLISH_LOOP does not handle failed message publishing, leading to silent failures.
+   - **Corrective Measure**: Monitor the MQTTPublish status and implement retry logic on failure, potentially transitioning to an error state if retries exceed a threshold.
+
+3. **Lack of Response to Disconnection**:
+   - **Issue**: The code lacks validation of MQTTIsConnected in the loop, leading to possible undetected disconnections.
+   - **Corrective Measure**: Add checks to ensure the connection is alive and initiate reconnection if MQTTIsConnected returns false.
+
+4. **Simplified Error State Transition**:
+   - **Issue**: The FSM transitions from ERROR to NETWORK_INIT without addressing possible causes of failure in original tasks.
+   - **Corrective Measure**: Enhance FSM with network and MQTT connection checks before transition to loop writing detailed logs for troubleshooting.

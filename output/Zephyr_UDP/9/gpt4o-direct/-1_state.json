@@ -1,0 +1,16 @@
+{
+    "error": [
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:2:10: fatal error: zephyr.h: No such file or directory\r"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a Zephyr program for the ESP32 that connects to a UDP server at `47.102.103.1:20001` to send device state (\u201dwork or not work\u201d) by UDP method every five seconds."
+        ]
+    ],
+    "generation": "\n#include <zephyr.h>\n#include <net/socket.h>\n#include <stdio.h>\n#include <string.h>\n\n#define SERVER_IP \"47.102.103.1\"\n#define SERVER_PORT 20001\n#define DEVICE_STATE_WORK \"work\"\n#define DEVICE_STATE_NOT_WORK \"not work\"\n#define SEND_INTERVAL_SECONDS 5\n\nvoid send_udp_message(int sock, const char *message) {\n    struct sockaddr_in server_addr;\n    memset(&server_addr, 0, sizeof(server_addr));\n    server_addr.sin_family = AF_INET;\n    server_addr.sin_port = htons(SERVER_PORT);\n    inet_pton(AF_INET, SERVER_IP, &server_addr.sin_addr);\n\n    sendto(sock, message, strlen(message), 0, (struct sockaddr *)&server_addr, sizeof(server_addr));\n}\n\nint main(void) {\n    int sock;\n    struct sockaddr_in local_addr;\n\n    // Create UDP socket\n    sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);\n    if (sock < 0) {\n        printf(\"Error creating socket\\n\");\n        return -1;\n    }\n\n    // Bind socket to local address\n    memset(&local_addr, 0, sizeof(local_addr));\n    local_addr.sin_family = AF_INET;\n    local_addr.sin_addr.s_addr = INADDR_ANY;\n    local_addr.sin_port = 0; // Let the system assign a port\n\n    if (bind(sock, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {\n        printf(\"Error binding socket\\n\");\n        close(sock);\n        return -1;\n    }\n\n    // Simulate device state (work or not work)\n    bool device_working = true;\n\n    while (1) {\n        const char *state_message = device_working ? DEVICE_STATE_WORK : DEVICE_STATE_NOT_WORK;\n        send_udp_message(sock, state_message);\n        printf(\"Sent device state: %s\\n\", state_message);\n\n        // Toggle device state\n        device_working = !device_working;\n\n        // Wait for 5 seconds before sending the next state\n        k_sleep(K_SECONDS(SEND_INTERVAL_SECONDS));\n    }\n\n    close(sock);\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

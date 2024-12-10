@@ -1,0 +1,16 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:8:10: fatal error: net/conn/udp.h: No such file or directory"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to an MQTT-SN broker at\u00a047.102.103.1:1883\u00a0to publish state (\u201dwork or not work\u201d) every five seconds. To reduce energy, you must use emcute lib."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include <xtimer.h>\n#include \"net/emcute.h\"\n#include \"net/ipv6/addr.h\"\n#include \"net/af.h\"\n#include \"net/conn/udp.h\"\n#include \"net/netif.h\"\n#include \"shell.h\"\n\n#define EMCUTE_PORT       1883\n#define EMCUTE_ADDR       \"47.102.103.1\"\n#define TOPIC_NAME        \"state\"\n#define PUBLISH_INTERVAL  (5 * 1000000U)  // 5 seconds in microseconds\n\nstatic char emcute_stack[THREAD_STACKSIZE_DEFAULT];\nstatic emcute_topic_t topic;\n\nstatic void *emcute_thread(void *arg)\n{\n    (void)arg;\n\n    sock_udp_ep_t local = SOCK_IPV6_EP_ANY;\n    local.port = EMCUTE_PORT;\n    sock_udp_ep_t remote = { .family = AF_INET, .port = EMCUTE_PORT };\n\n    if (ipv6_addr_from_str((ipv6_addr_t *)&remote.addr.ipv6, EMCUTE_ADDR) == NULL) {\n        puts(\"Error: unable to parse MQTT-SN broker address\");\n        return NULL;\n    }\n\n    if (sock_udp_create(&sock_udp, &local, &remote, 0) < 0) {\n        puts(\"Error: unable to create UDP socket\");\n        return NULL;\n    }\n\n    emcute_sub_t sub;\n    memset(&sub, 0, sizeof(sub));\n    sub.cb = NULL;\n    sub.topic = &topic;\n\n    if (emcute_con(&sub, false, NULL, NULL, 0, 0) != EMCUTE_OK) {\n        puts(\"Error: unable to connect to MQTT-SN broker\");\n        return NULL;\n    }\n\n    while (1) {\n        char payload[20];\n        strcpy(payload, \"work\");  // or \"not work\" based on your logic\n\n        if (emcute_pub(&sub, &topic, payload, strlen(payload), 0) != EMCUTE_OK) {\n            puts(\"Error: unable to publish message\");\n        } else {\n            printf(\"Published: %s\\n\", payload);\n        }\n\n        xtimer_usleep(PUBLISH_INTERVAL);\n    }\n\n    return NULL;\n}\n\nint main(void)\n{\n    thread_create(emcute_stack, sizeof(emcute_stack), THREAD_PRIORITY_MAIN - 1,\n                  THREAD_CREATE_STACKTEST, emcute_thread, NULL, \"emcute\");\n\n    topic.name = TOPIC_NAME;\n    topic.id = 0;  // Topic ID will be assigned by the broker\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

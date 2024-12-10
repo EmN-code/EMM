@@ -1,0 +1,26 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32, where one thread sends messages to another with different priorities. We also need to achieve inter-thread communication using\u00a0msg_t."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: [\"/root/RIOT/examples/LLM_Gen/main.c:46:9: error: 'stack_high' undeclared (first use in this function)\", \"/root/RIOT/examples/LLM_Gen/main.c:54:9: error: 'stack_low' undeclared (first use in this function)\"] and Invoke the code tool to solve the error and structure the output with a prefix and code block. "
+        ],
+        [
+            "user",
+            "Your answer cannot contain the provided headers and apis from blacklist!): ['msg.h']"
+        ],
+        [
+            "user",
+            "Your answer must contain all the ['event/thread.h', 'evtimer_mbox.h', 'xtimer.h', 'ztimer.h', 'msg.h', 'thread.h', 'evtimer_msg.h']!"
+        ]
+    ],
+    "generation": "\n#include \"event/thread.h\"\n#include \"evtimer_mbox.h\"\n#include \"xtimer.h\"\n#include \"ztimer.h\"\n#include \"msg.h\"\n#include \"thread.h\"\n#include \"evtimer_msg.h\"\n\n#define STACK_SIZE_HIGH (1024)\n#define STACK_SIZE_LOW (512)\n\nstatic char stack_high[STACK_SIZE_HIGH];\nstatic char stack_low[STACK_SIZE_LOW];\n\nstatic kernel_pid_t pid_high, pid_low;\n\nstatic msg_t msg_queue_high[8];\nstatic msg_t msg_queue_low[8];\n\nvoid *thread_high(void *arg)\n{\n    (void)arg;\n    msg_t msg;\n\n    while (1) {\n        msg_receive(&msg);\n        printf(\"High priority thread received message: %\" PRIu32 \"\\n\", msg.content.value);\n    }\n\n    return NULL;\n}\n\nvoid *thread_low(void *arg)\n{\n    (void)arg;\n    msg_t msg;\n\n    while (1) {\n        msg_receive(&msg);\n        printf(\"Low priority thread received message: %\" PRIu32 \"\\n\", msg.content.value);\n    }\n\n    return NULL;\n}\n\nint main(void)\n{\n    msg_init_queue(msg_queue_high, 8);\n    msg_init_queue(msg_queue_low, 8);\n\n    pid_high = thread_create(stack_high, sizeof(stack_high), THREAD_PRIORITY_MAIN - 1,\n                             THREAD_CREATE_STACKTEST, thread_high, NULL, \"high\");\n\n    pid_low = thread_create(stack_low, sizeof(stack_low), THREAD_PRIORITY_MAIN - 2,\n                            THREAD_CREATE_STACKTEST, thread_low, NULL, \"low\");\n\n    msg_t msg;\n    msg.type = 0;\n\n    for (int i = 0; i < 10; i++) {\n        msg.content.value = i;\n        if (i % 2 == 0) {\n            msg_send(&msg, pid_high);\n        } else {\n            msg_send(&msg, pid_low);\n        }\n        xtimer_sleep(1);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 2
+}

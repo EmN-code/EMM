@@ -1,0 +1,24 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:6:10: fatal error: net/mqtt.h: No such file or directory"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to an MQTT broker at\u00a047.102.103.1:1883\u00a0to publish state (\u201dwork or not work\u201d) each five seconds. Do not use emcute lib."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: ['/root/RIOT/examples/LLM_Gen/main.c:6:10: fatal error: net/mqtt.h: No such file or directory'] and Invoke the code tool to solve the error and structure the output with a prefix and code block. "
+        ],
+        [
+            "user",
+            "Note: you must ensure that 'MQTTClient.h' is the last header file to be included, if it needs to be used."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include <xtimer.h>\n#include <net/sock.h>\n#include <net/mqtt.h>\n#include <net/mqtt_client.h>\n\n#define BROKER_IP \"47.102.103.1\"\n#define BROKER_PORT 1883\n#define TOPIC \"state\"\n#define PAYLOAD \"work\"\n#define INTERVAL (5 * 1000000U)  // 5 seconds in microseconds\n\nstatic void _mqtt_connect(mqtt_client_t *client, void *arg)\n{\n    (void)arg;\n    printf(\"Connected to MQTT broker\\n\");\n}\n\nstatic void _mqtt_disconnect(mqtt_client_t *client, void *arg, mqtt_connection_status_t reason)\n{\n    (void)client;\n    (void)arg;\n    printf(\"Disconnected from MQTT broker: %d\\n\", reason);\n}\n\nstatic void _mqtt_publish(mqtt_client_t *client, void *arg, const char *topic, const char *payload, size_t len, int qos, int retain)\n{\n    (void)client;\n    (void)arg;\n    printf(\"Published to topic %s: %s\\n\", topic, payload);\n}\n\nint main(void)\n{\n    mqtt_client_t client;\n    sock_tcp_ep_t broker = { .family = AF_INET, .port = BROKER_PORT };\n    inet_addr_t broker_addr;\n    xtimer_ticks32_t last_wakeup = xtimer_now();\n\n    if (inet_pton(AF_INET, BROKER_IP, &broker_addr) <= 0) {\n        printf(\"Invalid broker IP address\\n\");\n        return 1;\n    }\n    broker.addr.ipv4 = broker_addr;\n\n    mqtt_client_config_t config = {\n        .connect = _mqtt_connect,\n        .disconnect = _mqtt_disconnect,\n        .publish = _mqtt_publish,\n        .arg = NULL\n    };\n\n    mqtt_client_init(&client, &config);\n\n    if (mqtt_client_connect(&client, &broker) < 0) {\n        printf(\"Failed to connect to MQTT broker\\n\");\n        return 1;\n    }\n\n    while (1) {\n        xtimer_usleep_until(&last_wakeup, INTERVAL);\n        mqtt_client_publish(&client, TOPIC, PAYLOAD, strlen(PAYLOAD), 0, 0);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 11
+}

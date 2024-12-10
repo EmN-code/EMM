@@ -1,0 +1,18 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop Zephyr code on an ESP32 to achieve interrupt handling. The program uses atomic variables to verify if disabling and restoring interrupts works correctly. You should use irq but not use gpio interface. "
+        ],
+        [
+            "assistant",
+            "prefix: This Zephyr program for an ESP32 demonstrates how to handle interrupts using atomic variables without utilizing a GPIO interface. The code snippet locks the interrupts using `irq_lock()` and then increments an atomic counter to verify that interrupts have been disabled. After simulating critical work for 1 second using `k_busy_wait()` (without any specific GPIO work), it restores the interrupts using `irq_unlock()` and decrements the counter. This example shows the disabling and restoring of interrupts effectively using an atomic variable to track the interrupt status. \n block: #include <zephyr/types.h>\n#include <zephyr/sys/util.h>\n#include <zephyr/kernel.h>\n\nvoid main(void) {\n    // Initialize an atomic variable\n    atomic_t irq_count = 0;\n\n    // Disable interrupts and check the state\n    unsigned int key = irq_lock();\n    atomic_inc(&irq_count);\n    printk(\"Interrupts disabled, count: %d\\n\", atomic_get(&irq_count));\n\n    // Do some critical work\n    k_busy_wait(USEC_PER_SEC);  // Simulates doing work for 1 second\n\n    // Restore interrupts to their previous state\n    irq_unlock(key);\n    atomic_dec(&irq_count);\n    printk(\"Interrupts restored, count: %d\\n\", atomic_get(&irq_count));\n\n    while (1) {\n        // Idle loop\n        k_sleep(K_MSEC(1000));\n    }\n} \n"
+        ]
+    ],
+    "generation": "#include <zephyr/types.h>\n#include <zephyr/sys/util.h>\n#include <zephyr/kernel.h>\n\nvoid main(void) {\n    // Initialize an atomic variable\n    atomic_t irq_count = 0;\n\n    // Disable interrupts and check the state\n    unsigned int key = irq_lock();\n    atomic_inc(&irq_count);\n    printk(\"Interrupts disabled, count: %d\\n\", atomic_get(&irq_count));\n\n    // Do some critical work\n    k_busy_wait(USEC_PER_SEC);  // Simulates doing work for 1 second\n\n    // Restore interrupts to their previous state\n    irq_unlock(key);\n    atomic_dec(&irq_count);\n    printk(\"Interrupts restored, count: %d\\n\", atomic_get(&irq_count));\n\n    while (1) {\n        // Idle loop\n        k_sleep(K_MSEC(1000));\n    }\n}",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

@@ -1,0 +1,16 @@
+{
+    "error": [
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:2:10: fatal error: zephyr.h: No such file or directory\r"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a Zephyr program for the ESP32 that connects to an MQTT broker at 47.102.103.1:1883 to publish state (\u201dwork or not work\u201d) each five seconds. Do not use emcute lib."
+        ]
+    ],
+    "generation": "\n#include <zephyr.h>\n#include <net/socket.h>\n#include <net/mqtt.h>\n#include <logging/log.h>\n#include <string.h>\n\n#define MQTT_BROKER_ADDR \"47.102.103.1\"\n#define MQTT_BROKER_PORT 1883\n#define MQTT_TOPIC \"device/state\"\n#define MQTT_CLIENT_ID \"esp32_client\"\n\nLOG_MODULE_REGISTER(mqtt_example);\n\nstatic int mqtt_connect(int sock)\n{\n    struct mqtt_client client;\n    struct sockaddr_in broker;\n    struct mqtt_connect_client_info_t ci;\n    int ret;\n\n    memset(&client, 0, sizeof(client));\n    memset(&broker, 0, sizeof(broker));\n    memset(&ci, 0, sizeof(ci));\n\n    broker.sin_family = AF_INET;\n    broker.sin_port = htons(MQTT_BROKER_PORT);\n    inet_pton(AF_INET, MQTT_BROKER_ADDR, &broker.sin_addr);\n\n    client.broker = &broker;\n    client.broker_len = sizeof(broker);\n    client.transport.type = MQTT_TRANSPORT_NON_SECURE;\n    client.transport.tcp.sock = sock;\n\n    ci.client_id = MQTT_CLIENT_ID;\n    ci.keepalive = 60;\n\n    ret = mqtt_connect(&client, &ci);\n    if (ret) {\n        LOG_ERR(\"MQTT connect failed %d\", ret);\n        return ret;\n    }\n\n    return 0;\n}\n\nstatic int mqtt_publish(int sock, const char *topic, const char *payload)\n{\n    struct mqtt_client client;\n    struct mqtt_publish_client_info_t pi;\n    int ret;\n\n    memset(&client, 0, sizeof(client));\n    memset(&pi, 0, sizeof(pi));\n\n    client.transport.type = MQTT_TRANSPORT_NON_SECURE;\n    client.transport.tcp.sock = sock;\n\n    pi.topic = topic;\n    pi.payload = payload;\n    pi.payload_len = strlen(payload);\n\n    ret = mqtt_publish(&client, &pi);\n    if (ret) {\n        LOG_ERR(\"MQTT publish failed %d\", ret);\n        return ret;\n    }\n\n    return 0;\n}\n\nvoid main(void)\n{\n    int sock;\n    int ret;\n\n    sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);\n    if (sock < 0) {\n        LOG_ERR(\"Failed to create socket %d\", sock);\n        return;\n    }\n\n    struct sockaddr_in broker;\n    broker.sin_family = AF_INET;\n    broker.sin_port = htons(MQTT_BROKER_PORT);\n    inet_pton(AF_INET, MQTT_BROKER_ADDR, &broker.sin_addr);\n\n    ret = connect(sock, (struct sockaddr *)&broker, sizeof(broker));\n    if (ret < 0) {\n        LOG_ERR(\"Failed to connect to broker %d\", ret);\n        close(sock);\n        return;\n    }\n\n    ret = mqtt_connect(sock);\n    if (ret) {\n        close(sock);\n        return;\n    }\n\n    while (1) {\n        const char *state = (k_uptime_get() % 10000 < 5000) ? \"work\" : \"not work\";\n        ret = mqtt_publish(sock, MQTT_TOPIC, state);\n        if (ret) {\n            LOG_ERR(\"Failed to publish state %d\", ret);\n            break;\n        }\n        k_sleep(K_SECONDS(5));\n    }\n\n    close(sock);\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

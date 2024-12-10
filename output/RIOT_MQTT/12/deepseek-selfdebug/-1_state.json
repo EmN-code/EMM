@@ -1,0 +1,20 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:6:10: fatal error: net/mqtt.h: No such file or directory"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to an MQTT broker at\u00a047.102.103.1:1883\u00a0to publish state (\u201dwork or not work\u201d) each five seconds. Do not use emcute lib."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: ['/root/RIOT/examples/LLM_Gen/main.c:6:10: fatal error: net/mqtt.h: No such file or directory'] and Invoke the code tool to solve the error and structure the output with a prefix and code block."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include <xtimer.h>\n#include <net/sock/tcp.h>\n#include <net/mqtt.h>\n\n#define MQTT_BROKER_IP \"47.102.103.1\"\n#define MQTT_BROKER_PORT 1883\n#define MQTT_TOPIC \"state\"\n#define MQTT_CLIENT_ID \"esp32_client\"\n#define MQTT_MESSAGE \"work\"\n#define MQTT_QOS 0\n#define MQTT_RETAIN 0\n\nstatic void mqtt_connect(mqtt_client_t *client, const char *broker_ip, uint16_t broker_port)\n{\n    sock_tcp_ep_t broker_addr = { .family = AF_INET, .port = broker_port };\n    inet_pton(AF_INET, broker_ip, &broker_addr.addr.ipv4);\n\n    mqtt_connect_info_t conn_info = {\n        .client_id = MQTT_CLIENT_ID,\n        .keep_alive = 60,\n        .clean_session = 1,\n    };\n\n    mqtt_client_connect(client, &broker_addr, &conn_info, NULL, NULL);\n}\n\nstatic void mqtt_publish(mqtt_client_t *client, const char *topic, const char *message)\n{\n    mqtt_publish_info_t pub_info = {\n        .topic = topic,\n        .payload = message,\n        .payload_len = strlen(message),\n        .qos = MQTT_QOS,\n        .retain = MQTT_RETAIN,\n    };\n\n    mqtt_client_publish(client, &pub_info, NULL, NULL);\n}\n\nint main(void)\n{\n    mqtt_client_t client;\n    mqtt_client_init(&client);\n\n    mqtt_connect(&client, MQTT_BROKER_IP, MQTT_BROKER_PORT);\n\n    while (1) {\n        mqtt_publish(&client, MQTT_TOPIC, MQTT_MESSAGE);\n        xtimer_sleep(5);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 11
+}

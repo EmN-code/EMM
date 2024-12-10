@@ -1,0 +1,14 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32 to achieve message box functionality. The program sets up a message box, sending events at intervals."
+        ]
+    ],
+    "generation": "\n#include \"msg.h\"\n#include \"thread.h\"\n#include \"xtimer.h\"\n#include \"mbox.h\"\n\n#define MSG_QUEUE_SIZE 10\n#define INTERVAL_MS 1000000  // 1 second in microseconds\n\nstatic mbox_t mbox;\nstatic msg_t msg_queue[MSG_QUEUE_SIZE];\n\nstatic void *event_sender(void *arg) {\n    (void)arg;\n    msg_t msg;\n\n    while (1) {\n        xtimer_usleep(INTERVAL_MS);\n        msg.content.value = 1;  // Dummy event value\n        mbox_put(&mbox, &msg);\n    }\n\n    return NULL;\n}\n\nstatic void *event_receiver(void *arg) {\n    (void)arg;\n    msg_t msg;\n\n    while (1) {\n        mbox_get(&mbox, &msg);\n        printf(\"Received event with value: %d\\n\", (int)msg.content.value);\n    }\n\n    return NULL;\n}\n\nint main(void) {\n    mbox_init(&mbox, msg_queue, MSG_QUEUE_SIZE);\n\n    thread_create(\n        NULL,\n        THREAD_STACKSIZE_DEFAULT,\n        THREAD_PRIORITY_MAIN - 1,\n        THREAD_CREATE_STACKTEST,\n        event_sender,\n        NULL,\n        \"event_sender\"\n    );\n\n    thread_create(\n        NULL,\n        THREAD_STACKSIZE_DEFAULT,\n        THREAD_PRIORITY_MAIN - 1,\n        THREAD_CREATE_STACKTEST,\n        event_receiver,\n        NULL,\n        \"event_receiver\"\n    );\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

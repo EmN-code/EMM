@@ -1,0 +1,18 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32, where one thread sends messages to another with different priorities. We also need to achieve inter-thread communication using\u00a0msg_t."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: [\"/root/RIOT/examples/LLM_Gen/main.c:6:61: error: 'DEBUG_EXTRA_STACKSIZE' undeclared (first use in this function); did you mean 'THREAD_EXTRA_STACKSIZE'?\", \"/root/RIOT/examples/LLM_Gen/main.c:42:10: error: unused variable 'receiver_stack' [-Werror=unused-variable]\", \"/root/RIOT/examples/LLM_Gen/main.c:41:10: error: unused variable 'sender_stack' [-Werror=unused-variable]\"] and Invoke the code tool to solve the error and structure the output with a prefix and code block."
+        ]
+    ],
+    "generation": "\n#include \"thread.h\"\n#include \"msg.h\"\n#include \"xtimer.h\"\n\n#define SENDER_STACKSIZE (THREAD_STACKSIZE_DEFAULT + THREAD_EXTRA_STACKSIZE)\n#define RECEIVER_STACKSIZE (THREAD_STACKSIZE_DEFAULT + THREAD_EXTRA_STACKSIZE)\n\nstatic char sender_stack[SENDER_STACKSIZE];\nstatic char receiver_stack[RECEIVER_STACKSIZE];\n\nstatic kernel_pid_t sender_pid;\nstatic kernel_pid_t receiver_pid;\n\nstatic void *sender_thread(void *arg)\n{\n    (void)arg;\n    msg_t msg;\n    msg.content.value = 42;\n\n    while (1) {\n        msg_send(&msg, receiver_pid);\n        xtimer_sleep(1);\n    }\n\n    return NULL;\n}\n\nstatic void *receiver_thread(void *arg)\n{\n    (void)arg;\n    msg_t msg;\n\n    while (1) {\n        msg_receive(&msg);\n        printf(\"Received message with value: %d\\n\", (int)msg.content.value);\n    }\n\n    return NULL;\n}\n\nint main(void)\n{\n    sender_pid = thread_create(sender_stack, sizeof(sender_stack),\n                               THREAD_PRIORITY_MAIN - 1, THREAD_CREATE_STACKTEST,\n                               sender_thread, NULL, \"sender\");\n\n    receiver_pid = thread_create(receiver_stack, sizeof(receiver_stack),\n                                 THREAD_PRIORITY_MAIN - 2, THREAD_CREATE_STACKTEST,\n                                 receiver_thread, NULL, \"receiver\");\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 3
+}

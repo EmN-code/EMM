@@ -1,0 +1,14 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32, which  sends a CoAP request to an COAP server. The program is configured to send CoAP POST requests \"Hello, COAP Cloud\" to the COAP server at IP address \"47.102.103.1\" and port 5683, with the URI path \"/coap/test\". "
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include \"net/gcoap.h\"\n#include \"net/ipv6/addr.h\"\n#include \"net/sock/udp.h\"\n#include \"xtimer.h\"\n\n#define SERVER_IP \"47.102.103.1\"\n#define SERVER_PORT 5683\n#define URI_PATH \"/coap/test\"\n#define MESSAGE \"Hello, COAP Cloud\"\n\nstatic void _resp_handler(const gcoap_request_memo_t *memo, coap_pkt_t *pdu, const sock_udp_ep_t *remote)\n{\n    if (memo->state == GCOAP_MEMO_TIMEOUT) {\n        puts(\"Request timed out\");\n    }\n    else if (memo->state == GCOAP_MEMO_ERR) {\n        puts(\"Request failed\");\n    }\n    else {\n        char *class_str = (coap_get_code_class(pdu) == COAP_CLASS_SUCCESS) ? \"Success\" : \"Error\";\n        printf(\"Response Code: %s/%u\\n\", class_str, coap_get_code_detail(pdu));\n    }\n}\n\nint main(void)\n{\n    sock_udp_ep_t remote = { .family = AF_INET, .port = SERVER_PORT };\n    uint8_t buf[CONFIG_GCOAP_PDU_BUF_SIZE];\n    coap_pkt_t pdu;\n\n    // Initialize the remote endpoint with the server's IP address\n    if (ipv4_addr_from_str((ipv4_addr_t *)&remote.addr.ipv4, SERVER_IP) == NULL) {\n        puts(\"Error parsing server IP address\");\n        return 1;\n    }\n\n    // Initialize the CoAP packet\n    gcoap_req_init(&pdu, buf, CONFIG_GCOAP_PDU_BUF_SIZE, COAP_METHOD_POST, URI_PATH);\n    coap_opt_add_format(&pdu, COAP_FORMAT_TEXT);\n    ssize_t payload_len = coap_opt_finish(&pdu, COAP_OPT_FINISH_PAYLOAD);\n\n    // Add the payload\n    memcpy(pdu.payload, MESSAGE, strlen(MESSAGE));\n    payload_len += strlen(MESSAGE);\n\n    // Send the CoAP request\n    gcoap_req_send(&buf[0], payload_len, &remote, _resp_handler, NULL, GCOAP_SOCKET_TYPE_UDP);\n\n    // Keep the application running\n    while (1) {\n        xtimer_sleep(1);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

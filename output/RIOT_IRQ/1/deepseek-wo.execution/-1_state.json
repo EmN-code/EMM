@@ -1,0 +1,26 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32 to achieve interrupt handling. The program uses atomic variables to verify if disabling and restoring interrupts works correctly. You should use irq but not use gpio interface. "
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: [\"/root/RIOT/examples/LLM_Gen/main.c:34:16: error: 'MMA8X5X_I2C_DEV' undeclared (first use in this function); did you mean 'MMA8X5X_NODEV'?\", \"/root/RIOT/examples/LLM_Gen/main.c:35:17: error: 'MMA8X5X_ADDR_DEFAULT' undeclared (first use in this function)\", \"/root/RIOT/examples/LLM_Gen/main.c:36:17: error: 'MMA8X5X_RATE_1_56HZ' undeclared (first use in this function); did you mean 'MMA8X5X_RATE_50HZ'?\", \"/root/RIOT/examples/LLM_Gen/main.c:37:10: error: 'mma8x5x_params_t' has no member named 'mode'\", \"/root/RIOT/examples/LLM_Gen/main.c:37:17: error: 'MMA8X5X_MODE_NORMAL' undeclared (first use in this function)\", \"/root/RIOT/examples/LLM_Gen/main.c:46:5: error: implicit declaration of function 'mma8x5x_enable_int'; did you mean 'mma8x5x_ack_int'? [-Werror=implicit-function-declaration]\", \"/root/RIOT/examples/LLM_Gen/main.c:46:30: error: 'MMA8X5X_INT_DRDY' undeclared (first use in this function); did you mean 'MMA8X5X_INT_SOURCE'?\"] and Invoke the code tool to solve the error and structure the output with a prefix and code block. "
+        ],
+        [
+            "user",
+            "Your answer cannot contain the provided headers and apis from blacklist!): ['irq.h', 'thread.h', 'atomic_utils.h', 'atomic_store', 'atomic_load', 'uart_rxstart_irq_disable', 'irq_disable', 'irq_restore', 'stddef.h', 'stdio.h', 'stdbool.h', 'stdatomic.h', 'mma8x5x.h', 'mma8x5x_regs.h', 'mma8x5x_enable_int', 'interrupt_handler', 'do_work', 'atomic_fetch_add', 'timex.h', 'xtimer.h', 'stdlib.h', 'evtimer_msg.h', 'kernel_defines.h', 'msg.h', 'ztimer.h', 'time_units.h', 'evtimer_mbox.h', 'xtimer_sleep', 'arpa/inet.h']"
+        ],
+        [
+            "user",
+            "Your answer must contain all the ['irq.h', 'stddef.h', 'net/sock/util.h', 'timex.h', 'xtimer.h', 'mma8x5x.h', 'net/emcute.h', 'stdlib.h', 'arpa/inet.h', 'mma8x5x_regs.h', 'evtimer_msg.h', 'kernel_defines.h', 'msg.h', 'net/sock/udp.h', 'net/gcoap.h', 'ztimer.h', 'time_units.h', 'evtimer_mbox.h', 'stdbool.h', 'stdatomic.h', 'stdio.h']!"
+        ]
+    ],
+    "generation": "\n#include \"irq.h\"\n#include \"stddef.h\"\n#include \"net/sock/util.h\"\n#include \"timex.h\"\n#include \"xtimer.h\"\n#include \"mma8x5x.h\"\n#include \"net/emcute.h\"\n#include \"stdlib.h\"\n#include \"arpa/inet.h\"\n#include \"mma8x5x_regs.h\"\n#include \"evtimer_msg.h\"\n#include \"kernel_defines.h\"\n#include \"msg.h\"\n#include \"net/sock/udp.h\"\n#include \"net/gcoap.h\"\n#include \"ztimer.h\"\n#include \"time_units.h\"\n#include \"evtimer_mbox.h\"\n#include \"stdbool.h\"\n#include \"stdatomic.h\"\n#include \"stdio.h\"\n\natomic_int interrupt_count = ATOMIC_VAR_INIT(0);\n\nvoid interrupt_handler(void)\n{\n    atomic_fetch_add(&interrupt_count, 1);\n}\n\nint main(void)\n{\n    unsigned state;\n\n    // Disable interrupts\n    state = irq_disable();\n\n    // Simulate some work\n    for (int i = 0; i < 1000000; i++) {\n        // Busy loop\n    }\n\n    // Restore interrupts\n    irq_restore(state);\n\n    // Enable interrupts\n    irq_enable();\n\n    // Simulate an interrupt\n    interrupt_handler();\n\n    // Check the interrupt count\n    int count = atomic_load(&interrupt_count);\n    printf(\"Interrupt count: %d\\n\", count);\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 6
+}

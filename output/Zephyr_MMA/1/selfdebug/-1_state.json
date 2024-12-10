@@ -1,0 +1,20 @@
+{
+    "error": [
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:2:10: fatal error: zephyr.h: No such file or directory\r"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop Zephyr code on an ESP32. It read MMA8x5x every 5 seconds and uses Non-Volatile Storage (NVS) to store the read value persistently. "
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: ['E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:2:10: fatal error: zephyr.h: No such file or directory\\r'] and Invoke the code tool to solve the error and structure the output with a prefix and code block."
+        ]
+    ],
+    "generation": "\n#include <zephyr.h>\n#include <device.h>\n#include <drivers/sensor.h>\n#include <storage/flash_map.h>\n#include <fs/nvs.h>\n#include <logging/log.h>\n\n#define MMA8x5x_DEVICE_NAME \"MMA8x5x\"\n#define NVS_PARTITION_ID FIXED_PARTITION_ID(storage_partition)\n#define NVS_PARTITION_DEVICE FIXED_PARTITION_DEVICE(storage_partition)\n#define NVS_PARTITION_OFFSET FIXED_PARTITION_OFFSET(storage_partition)\n#define NVS_PARTITION_SIZE FIXED_PARTITION_SIZE(storage_partition)\n\nLOG_MODULE_REGISTER(main);\n\nvoid read_sensor_and_store(const struct device *dev, struct nvs_fs *fs)\n{\n    struct sensor_value accel[3];\n    int ret;\n\n    ret = sensor_sample_fetch(dev);\n    if (ret) {\n        LOG_ERR(\"Failed to fetch sample (%d)\", ret);\n        return;\n    }\n\n    ret = sensor_channel_get(dev, SENSOR_CHAN_ACCEL_XYZ, accel);\n    if (ret) {\n        LOG_ERR(\"Failed to get sensor data (%d)\", ret);\n        return;\n    }\n\n    uint32_t data = (uint32_t)(accel[0].val1 << 16 | accel[1].val1 << 8 | accel[2].val1);\n\n    ret = nvs_write(fs, 0, &data, sizeof(data));\n    if (ret < 0) {\n        LOG_ERR(\"Failed to write to NVS (%d)\", ret);\n    } else {\n        LOG_INF(\"Stored sensor data: %u\", data);\n    }\n}\n\nint main(void)\n{\n    const struct device *dev = device_get_binding(MMA8x5x_DEVICE_NAME);\n    if (!dev) {\n        LOG_ERR(\"Could not get %s device\", MMA8x5x_DEVICE_NAME);\n        return -1;\n    }\n\n    struct nvs_fs fs;\n    fs.sector_size = NVS_PARTITION_SIZE;\n    fs.sector_count = 1;\n    fs.offset = NVS_PARTITION_OFFSET;\n\n    int ret = nvs_mount(&fs);\n    if (ret) {\n        LOG_ERR(\"Failed to mount NVS (%d)\", ret);\n        return -1;\n    }\n\n    while (1) {\n        read_sensor_and_store(dev, &fs);\n        k_sleep(K_SECONDS(5));\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 11
+}

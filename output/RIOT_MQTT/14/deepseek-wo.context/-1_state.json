@@ -1,0 +1,24 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:6:10: fatal error: net/mqtt.h: No such file or directory"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to an MQTT broker at\u00a047.102.103.1:1883\u00a0to publish state (\u201dwork or not work\u201d) each five seconds. Do not use emcute lib."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: ['/root/RIOT/examples/LLM_Gen/main.c:5:10: fatal error: net/mqtt.h: No such file or directory'] and Invoke the code tool to solve the error and structure the output with a prefix and code block. "
+        ],
+        [
+            "user",
+            "Note: you must ensure that 'MQTTClient.h' is the last header file to be included, if it needs to be used."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include <xtimer.h>\n#include <net/sock/tcp.h>\n#include <net/mqtt.h>\n#include <net/mqtt_client.h>\n\n#define MQTT_BROKER_IP \"47.102.103.1\"\n#define MQTT_BROKER_PORT 1883\n#define MQTT_TOPIC \"state\"\n#define MQTT_MESSAGE \"work\"\n#define MQTT_QOS QOS0\n#define MQTT_KEEPALIVE 60\n#define MQTT_CLIENT_ID \"esp32_client\"\n\n#define TIMER_INTERVAL (5 * 1000000U) // 5 seconds in microseconds\n\nstatic MQTTClient mqtt_client;\nstatic Network mqtt_network;\nstatic unsigned char sendbuf[256];\nstatic unsigned char readbuf[256];\n\nvoid mqtt_connect(void) {\n    MQTTPacket_connectData options = MQTTPacket_connectData_initializer;\n    options.keepAliveInterval = MQTT_KEEPALIVE;\n    options.clientID.cstring = MQTT_CLIENT_ID;\n    options.cleansession = 1;\n\n    int rc = MQTTConnect(&mqtt_client, &options);\n    if (rc != 0) {\n        printf(\"MQTT connect failed, return code %d\\n\", rc);\n    } else {\n        printf(\"MQTT connected\\n\");\n    }\n}\n\nvoid mqtt_publish(void) {\n    MQTTMessage message;\n    message.qos = MQTT_QOS;\n    message.retained = 0;\n    message.payload = (void*)MQTT_MESSAGE;\n    message.payloadlen = strlen(MQTT_MESSAGE);\n\n    int rc = MQTTPublish(&mqtt_client, MQTT_TOPIC, &message);\n    if (rc != 0) {\n        printf(\"MQTT publish failed, return code %d\\n\", rc);\n    } else {\n        printf(\"MQTT message published\\n\");\n    }\n}\n\nint main(void) {\n    printf(\"Starting MQTT example\\n\");\n\n    // Initialize the network\n    sock_tcp_ep_t local = SOCK_IPV4_EP_ANY;\n    sock_tcp_ep_t remote = { .family = AF_INET, .port = MQTT_BROKER_PORT };\n    inet_pton(AF_INET, MQTT_BROKER_IP, &remote.addr.ipv4);\n\n    sock_tcp_t sock;\n    sock_tcp_create(&sock, &local, &remote, 0);\n\n    // Initialize the MQTT client\n    MQTTClientInit(&mqtt_client, &mqtt_network, 1000, sendbuf, sizeof(sendbuf), readbuf, sizeof(readbuf));\n    mqtt_network.sock = sock;\n    mqtt_network.mqttread = sock_tcp_read;\n    mqtt_network.mqttwrite = sock_tcp_write;\n\n    // Connect to the MQTT broker\n    mqtt_connect();\n\n    // Publish a message every 5 seconds\n    xtimer_ticks32_t last_wakeup = xtimer_now();\n    while (1) {\n        mqtt_publish();\n        xtimer_periodic_wakeup(&last_wakeup, TIMER_INTERVAL);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 11
+}

@@ -1,0 +1,18 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32. It starts two threads and change priority at runtime."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: [\"/root/RIOT/examples/LLM_Gen/main.c:15:55: error: 'sched_active_thread' undeclared (first use in this function); did you mean 'sched_num_threads'?\", \"/root/RIOT/examples/LLM_Gen/main.c:25:55: error: 'sched_active_thread' undeclared (first use in this function); did you mean 'sched_num_threads'?\", \"/root/RIOT/examples/LLM_Gen/main.c:42:27: error: passing argument 1 of 'sched_change_priority' makes pointer from integer without a cast [-Werror=int-conversion]\", \"/root/RIOT/examples/LLM_Gen/main.c:47:27: error: passing argument 1 of 'sched_change_priority' makes pointer from integer without a cast [-Werror=int-conversion]\"] and Invoke the code tool to solve the error and structure the output with a prefix and code block. "
+        ]
+    ],
+    "generation": "\n#include \"thread.h\"\n#include \"sched.h\"\n#include \"msg.h\"\n#include \"xtimer.h\"\n\n#define STACKSIZE (THREAD_STACKSIZE_DEFAULT)\n#define PRIORITY (THREAD_PRIORITY_MAIN - 1)\n\nkernel_pid_t thread1_pid, thread2_pid;\n\nvoid *thread1_func(void *arg)\n{\n    (void)arg;\n    while (1) {\n        printf(\"Thread 1 running\\n\");\n        xtimer_sleep(1);\n    }\n    return NULL;\n}\n\nvoid *thread2_func(void *arg)\n{\n    (void)arg;\n    while (1) {\n        printf(\"Thread 2 running\\n\");\n        xtimer_sleep(1);\n    }\n    return NULL;\n}\n\nint main(void)\n{\n    char stack1[STACKSIZE];\n    char stack2[STACKSIZE];\n\n    thread1_pid = thread_create(stack1, sizeof(stack1), PRIORITY, 0, thread1_func, NULL, \"thread1\");\n    thread2_pid = thread_create(stack2, sizeof(stack2), PRIORITY, 0, thread2_func, NULL, \"thread2\");\n\n    xtimer_sleep(5);\n\n    sched_change_priority(thread_get(thread1_pid), THREAD_PRIORITY_MAIN - 2);\n    sched_change_priority(thread_get(thread2_pid), THREAD_PRIORITY_MAIN - 2);\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 3
+}

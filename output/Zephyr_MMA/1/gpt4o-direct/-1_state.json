@@ -1,0 +1,16 @@
+{
+    "error": [
+        "E:/local_code/IoT/zephyrproject/zephyr/include/zephyr/fs/littlefs.h:14:10: fatal error: lfs.h: No such file or directory\r"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop Zephyr code on an ESP32. It read MMA8x5x every 5 seconds and uses NVS to store the reading value persistently. "
+        ]
+    ],
+    "generation": "\n#include <zephyr/kernel.h>\n#include <zephyr/device.h>\n#include <zephyr/drivers/sensor.h>\n#include <zephyr/storage/flash_map.h>\n#include <zephyr/fs/fs.h>\n#include <zephyr/fs/littlefs.h>\n#include <zephyr/logging/log.h>\n\nLOG_MODULE_REGISTER(main);\n\n#define MMA8x5x_NODE DT_INST(0, nxp_mma8x5x)\n#define NVS_PARTITION_ID FIXED_PARTITION_ID(storage)\n\nstatic struct fs_mount_t lfs_mnt = {\n    .type = FS_LITTLEFS,\n    .mnt_point = \"/lfs\",\n    .fs_data = NULL,\n    .storage_dev = (void *)NVS_PARTITION_ID,\n};\n\nstatic int init_filesystem(void) {\n    int ret;\n\n    ret = fs_mount(&lfs_mnt);\n    if (ret < 0) {\n        LOG_ERR(\"Error mounting littlefs [%d]\", ret);\n        return ret;\n    }\n\n    return 0;\n}\n\nstatic int read_sensor_data(const struct device *dev, struct sensor_value *val) {\n    int ret;\n\n    ret = sensor_sample_fetch(dev);\n    if (ret < 0) {\n        LOG_ERR(\"Failed to fetch sample (%d)\", ret);\n        return ret;\n    }\n\n    ret = sensor_channel_get(dev, SENSOR_CHAN_ACCEL_XYZ, val);\n    if (ret < 0) {\n        LOG_ERR(\"Failed to get data (%d)\", ret);\n        return ret;\n    }\n\n    return 0;\n}\n\nstatic int store_data_to_nvs(struct sensor_value *val) {\n    int ret;\n    struct fs_file_t file;\n    char buffer[32];\n\n    fs_file_t_init(&file);\n\n    ret = fs_open(&file, \"/lfs/sensor_data.txt\", FS_O_CREATE | FS_O_WRITE);\n    if (ret < 0) {\n        LOG_ERR(\"Failed to open file (%d)\", ret);\n        return ret;\n    }\n\n    snprintk(buffer, sizeof(buffer), \"X: %d.%06d, Y: %d.%06d, Z: %d.%06d\\n\",\n             val[0].val1, val[0].val2, val[1].val1, val[1].val2, val[2].val1, val[2].val2);\n\n    ret = fs_write(&file, buffer, strlen(buffer));\n    if (ret < 0) {\n        LOG_ERR(\"Failed to write to file (%d)\", ret);\n    }\n\n    fs_close(&file);\n    return ret;\n}\n\nint main(void) {\n    const struct device *dev;\n    struct sensor_value accel_value[3];\n    int ret;\n\n    dev = DEVICE_DT_GET(MMA8x5x_NODE);\n    if (!device_is_ready(dev)) {\n        LOG_ERR(\"Device %s is not ready\", dev->name);\n        return -ENODEV;\n    }\n\n    ret = init_filesystem();\n    if (ret < 0) {\n        LOG_ERR(\"Failed to initialize filesystem (%d)\", ret);\n        return ret;\n    }\n\n    while (1) {\n        ret = read_sensor_data(dev, accel_value);\n        if (ret < 0) {\n            LOG_ERR(\"Failed to read sensor data (%d)\", ret);\n        } else {\n            ret = store_data_to_nvs(accel_value);\n            if (ret < 0) {\n                LOG_ERR(\"Failed to store data to NVS (%d)\", ret);\n            }\n        }\n\n        k_sleep(K_SECONDS(5));\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

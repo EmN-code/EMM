@@ -1,0 +1,16 @@
+{
+    "error": [
+        "hello-world.c:3:10: fatal error: dev/dht11.h: No such file or directory"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop Contiki code on an NRF52840. It read dht11 each five seconds and turn on a rgb_led."
+        ]
+    ],
+    "generation": "\n#include \"contiki.h\"\n#include \"dev/dht11.h\"\n#include \"dev/leds.h\"\n#include <stdio.h>\n\n// Define the RGB LED pins\n#define RED_LED_PIN 22\n#define GREEN_LED_PIN 23\n#define BLUE_LED_PIN 24\n\n// Define the DHT11 sensor\nextern const struct sensors_sensor dht11_sensor;\n\n// Function to read DHT11 sensor data\nstatic void read_dht11(void) {\n    int temperature, humidity;\n    if (dht11_sensor.value(&dht11_sensor, 0, &temperature, &humidity) == 0) {\n        printf(\"Temperature: %d C, Humidity: %d %%\\n\", temperature, humidity);\n    } else {\n        printf(\"Failed to read DHT11 sensor\\n\");\n    }\n}\n\n// Function to turn on the RGB LED\nstatic void turn_on_rgb_led(void) {\n    leds_single_on(RED_LED_PIN);\n    leds_single_on(GREEN_LED_PIN);\n    leds_single_on(BLUE_LED_PIN);\n}\n\n// Main process\nPROCESS(dht11_rgb_led_process, \"DHT11 and RGB LED Process\");\nAUTOSTART_PROCESSES(&dht11_rgb_led_process);\n\nPROCESS_THREAD(dht11_rgb_led_process, ev, data) {\n    static struct etimer timer;\n\n    PROCESS_BEGIN();\n\n    // Initialize the DHT11 sensor\n    dht11_sensor.configure(&dht11_sensor, SENSORS_ACTIVE, 1);\n\n    // Set the timer to 5 seconds\n    etimer_set(&timer, CLOCK_SECOND * 5);\n\n    while (1) {\n        PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&timer));\n\n        // Read DHT11 sensor data\n        read_dht11();\n\n        // Turn on the RGB LED\n        turn_on_rgb_led();\n\n        // Reset the timer\n        etimer_reset(&timer);\n    }\n\n    PROCESS_END();\n}\n\nint main(void) {\n    // Initialize the Contiki system\n    contiki_init();\n\n    // Start the main process\n    process_start(&dht11_rgb_led_process, NULL);\n\n    // Enter the Contiki main loop\n    while (1) {\n        process_run();\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

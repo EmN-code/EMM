@@ -1,0 +1,14 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to a UDP server at\u00a0`47.102.103.1:20001`\u00a0to send device state (\u201dwork or not work\u201d) by UDP method every five seconds."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include <xtimer.h>\n#include \"net/sock/udp.h\"\n#include \"net/ipv4/addr.h\"\n\n#define SERVER_IP \"47.102.103.1\"\n#define SERVER_PORT 20001\n#define DEVICE_STATE_MSG \"work\"\n#define SEND_INTERVAL (5 * 1000 * 1000U) /* 5 seconds in microseconds */\n\nstatic sock_udp_ep_t server = { .port = SERVER_PORT, .family = AF_INET };\nstatic sock_udp_t sock;\n\nstatic void send_device_state(void)\n{\n    char buf[] = DEVICE_STATE_MSG;\n    sock_udp_ep_t remote = server;\n\n    if (sock_udp_send(&sock, buf, strlen(buf), &remote) < 0) {\n        puts(\"Error sending UDP message\");\n    } else {\n        puts(\"Device state sent\");\n    }\n}\n\nint main(void)\n{\n    /* Initialize the UDP socket */\n    if (sock_udp_create(&sock, NULL, &server, 0) < 0) {\n        puts(\"Error creating UDP socket\");\n        return 1;\n    }\n\n    /* Set the server IP address */\n    if (ipv4_addr_from_str((ipv4_addr_t *)&server.addr.ipv4, SERVER_IP) == NULL) {\n        puts(\"Error parsing server IP address\");\n        return 1;\n    }\n\n    /* Send device state every 5 seconds */\n    while (1) {\n        send_device_state();\n        xtimer_usleep(SEND_INTERVAL);\n    }\n\n    /* Close the UDP socket */\n    sock_udp_close(&sock);\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

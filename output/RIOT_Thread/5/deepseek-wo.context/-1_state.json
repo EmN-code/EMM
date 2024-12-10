@@ -1,0 +1,18 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32, where one thread sends messages to another with different priorities. We also need to achieve inter-thread communication using\u00a0msg_t."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: [\"/root/RIOT/examples/LLM_Gen/main.c:46:9: error: 'stack_buffer' undeclared (first use in this function)\"] and Invoke the code tool to solve the error and structure the output with a prefix and code block. "
+        ]
+    ],
+    "generation": "\n#include \"thread.h\"\n#include \"msg.h\"\n#include \"xtimer.h\"\n\n#define STACK_SIZE (THREAD_STACKSIZE_DEFAULT)\n#define PRIORITY_HIGH (THREAD_PRIORITY_MAIN - 1)\n#define PRIORITY_LOW (THREAD_PRIORITY_MAIN + 1)\n\nchar stack_buffer_high[STACK_SIZE];\nchar stack_buffer_low[STACK_SIZE];\n\nkernel_pid_t pid_high, pid_low;\n\nvoid *thread_high(void *arg)\n{\n    (void)arg;\n    msg_t msg;\n\n    while (1) {\n        msg_receive(&msg);\n        printf(\"High priority thread received message: %s\\n\", (char *)msg.content.ptr);\n    }\n\n    return NULL;\n}\n\nvoid *thread_low(void *arg)\n{\n    (void)arg;\n    msg_t msg;\n\n    while (1) {\n        msg_receive(&msg);\n        printf(\"Low priority thread received message: %s\\n\", (char *)msg.content.ptr);\n    }\n\n    return NULL;\n}\n\nint main(void)\n{\n    msg_t msg;\n\n    pid_high = thread_create(stack_buffer_high, sizeof(stack_buffer_high), PRIORITY_HIGH,\n                             THREAD_CREATE_STACKTEST, thread_high, NULL, \"high_priority_thread\");\n\n    pid_low = thread_create(stack_buffer_low, sizeof(stack_buffer_low), PRIORITY_LOW,\n                            THREAD_CREATE_STACKTEST, thread_low, NULL, \"low_priority_thread\");\n\n    msg.content.ptr = \"Message to high priority thread\";\n    msg_send(&msg, pid_high);\n\n    msg.content.ptr = \"Message to low priority thread\";\n    msg_send(&msg, pid_low);\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 2
+}

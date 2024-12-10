@@ -1,0 +1,17 @@
+{
+    "error": [
+        "E:/local_code/IoT/zephyrproject/zephyr/include/zephyr/devicetree.h:240:32: error: 'DT_N_ALIAS_storage_partition' undeclared (first use in this function); did you mean 'DT_N_NODELABEL_storage_partition'?",
+        "E:/local_code/IoT/zephyrproject/build/zephyr/include/generated/zephyr/devicetree_generated.h:5013:41: error: 'DT_N_S_soc_S_i2c_3ff53000' undeclared (first use in this function); did you mean 'DT_N_S_soc_S_i2c_3ff53000_ORD'?"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop Zephyr code on an ESP32. It read MMA8x5x every 5 seconds and uses NVS to store the reading value persistently. "
+        ]
+    ],
+    "generation": "\n#include <zephyr/kernel.h>\n#include <zephyr/device.h>\n#include <zephyr/drivers/sensor.h>\n#include <zephyr/drivers/i2c.h>\n#include <zephyr/storage/flash_map.h>\n#include <zephyr/fs/nvs.h>\n#include <zephyr/logging/log.h>\n\nLOG_MODULE_REGISTER(main);\n\n#define MMA8x5x_I2C_ADDRESS 0x1D\n#define MMA8x5x_I2C_BUS DT_LABEL(DT_NODELABEL(i2c0))\n#define NVS_PARTITION DT_LABEL(DT_ALIAS(storage_partition))\n#define NVS_SECTOR_SIZE 4096\n#define NVS_SECTOR_COUNT 2\n\nstatic struct nvs_fs fs;\n\nvoid read_mma8x5x(const struct device *dev) {\n    struct sensor_value accel[3];\n    int ret;\n\n    ret = sensor_sample_fetch(dev);\n    if (ret) {\n        LOG_ERR(\"Failed to fetch sample (%d)\", ret);\n        return;\n    }\n\n    ret = sensor_channel_get(dev, SENSOR_CHAN_ACCEL_XYZ, accel);\n    if (ret) {\n        LOG_ERR(\"Failed to get sensor data (%d)\", ret);\n        return;\n    }\n\n    LOG_INF(\"X: %d.%06d m/s^2, Y: %d.%06d m/s^2, Z: %d.%06d m/s^2\",\n            accel[0].val1, accel[0].val2,\n            accel[1].val1, accel[1].val2,\n            accel[2].val1, accel[2].val2);\n\n    // Store the reading value persistently in NVS\n    uint8_t data[12];\n    memcpy(data, accel, sizeof(accel));\n    nvs_write(&fs, 1, data, sizeof(data));\n}\n\nint main(void) {\n    const struct device *mma8x5x_dev;\n    int ret;\n\n    // Initialize NVS\n    fs.flash_device = NVS_PARTITION;\n    fs.offset = 0;\n    fs.sector_size = NVS_SECTOR_SIZE;\n    fs.sector_count = NVS_SECTOR_COUNT;\n\n    ret = nvs_mount(&fs);\n    if (ret) {\n        LOG_ERR(\"Failed to mount NVS (%d)\", ret);\n        return -1;\n    }\n\n    // Initialize MMA8x5x sensor\n    mma8x5x_dev = device_get_binding(MMA8x5x_I2C_BUS);\n    if (!mma8x5x_dev) {\n        LOG_ERR(\"Failed to get MMA8x5x device\");\n        return -1;\n    }\n\n    while (1) {\n        read_mma8x5x(mma8x5x_dev);\n        k_sleep(K_SECONDS(5));\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

@@ -1,0 +1,20 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:7:10: fatal error: emcute.h: No such file or directory"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to an MQTT-SN broker at\u00a047.102.103.1:1883\u00a0to publish state (\u201dwork or not work\u201d) every five seconds. To reduce energy, you must use emcute lib."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: [\"/root/RIOT/examples/LLM_Gen/main.c:34:18: error: implicit declaration of function 'inet_pton' [-Werror=implicit-function-declaration]\"] and Invoke the code tool to solve the error and structure the output with a prefix and code block."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include <xtimer.h>\n#include <net/ipv4/addr.h>\n#include <net/sock/udp.h>\n#include <emcute.h>\n\n#define MQTT_BROKER_IP \"47.102.103.1\"\n#define MQTT_BROKER_PORT 1883\n#define TOPIC_NAME \"state\"\n#define PUBLISH_INTERVAL (5 * 1000000U)  // 5 seconds in microseconds\n\nstatic emcute_topic_t topic;\nstatic sock_udp_ep_t gw;\n\nvoid publish_state(void) {\n    static const char *states[] = {\"work\", \"not work\"};\n    static uint8_t state_index = 0;\n\n    const char *state = states[state_index];\n    state_index = (state_index + 1) % 2;\n\n    printf(\"Publishing state: %s\\n\", state);\n    emcute_pub(&topic, state, strlen(state), 0);\n}\n\nint main(void) {\n    // Initialize the MQTT-SN topic\n    topic.name = TOPIC_NAME;\n    topic.id = 0;  // Topic ID will be assigned by the gateway\n\n    // Initialize the UDP endpoint for the MQTT-SN gateway\n    gw.family = AF_INET;\n    gw.port = MQTT_BROKER_PORT;\n    inet_pton(AF_INET, MQTT_BROKER_IP, &gw.addr.ipv4);\n\n    // Connect to the MQTT-SN gateway\n    if (emcute_con(&gw, true, NULL, NULL, 0, 0) != EMCUTE_OK) {\n        puts(\"Error: unable to connect to MQTT-SN gateway\");\n        return 1;\n    }\n\n    // Register the topic with the gateway\n    if (emcute_reg(&topic) != EMCUTE_OK) {\n        puts(\"Error: unable to register topic\");\n        return 1;\n    }\n\n    // Publish state every 5 seconds\n    while (1) {\n        publish_state();\n        xtimer_usleep(PUBLISH_INTERVAL);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 11
+}

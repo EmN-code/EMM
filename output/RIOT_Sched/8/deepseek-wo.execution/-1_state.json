@@ -1,0 +1,26 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32. It starts two threads and change priority at runtime."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: [\"/root/RIOT/examples/LLM_Gen/main.c:16:51: error: implicit declaration of function 'sched_active_thread' [-Werror=implicit-function-declaration]\", \"/root/RIOT/examples/LLM_Gen/main.c:16:72: error: invalid type argument of '->' (have 'int')\", \"/root/RIOT/examples/LLM_Gen/main.c:23:72: error: invalid type argument of '->' (have 'int')\", \"/root/RIOT/examples/LLM_Gen/main.c:32:26: error: implicit declaration of function 'thread_create' [-Werror=implicit-function-declaration]\", \"/root/RIOT/examples/LLM_Gen/main.c:40:27: error: implicit declaration of function 'thread_get' [-Werror=implicit-function-declaration]\", \"/root/RIOT/examples/LLM_Gen/main.c:40:27: error: passing argument 1 of 'sched_change_priority' makes pointer from integer without a cast [-Werror=int-conversion]\", \"/root/RIOT/examples/LLM_Gen/main.c:45:27: error: passing argument 1 of 'sched_change_priority' makes pointer from integer without a cast [-Werror=int-conversion]\"] and Invoke the code tool to solve the error and structure the output with a prefix and code block. "
+        ],
+        [
+            "user",
+            "Your answer cannot contain the provided headers and apis from blacklist!): ['thread.h', 'xtimer.h', 'periph/gpio.h', 'periph/uart.h', 'periph/timer.h', 'periph/rtc.h', 'periph/spi.h', 'periph/i2c.h', 'periph/adc.h', 'periph/pwm.h', 'periph/cpuid.h', 'periph/flashpage.h', 'periph/rtt.h', 'ztimer.h', 'event/thread.h', 'timex.h', 'evtimer_msg.h', 'evtimer_mbox.h', 'time_units.h', 'sched.h', 'msg.h', 'mbox.h', 'unistd.h', 'MQTTClient.h', 'stddef.h', 'stdatomic.h', 'stdbool.h', 'sched_active_thread']"
+        ],
+        [
+            "user",
+            "Your answer must contain all the ['stdio.h', 'unistd.h', 'MQTTClient.h', 'stddef.h', 'stdatomic.h', 'sched.h', 'paho_mqtt.h', 'stdlib.h', 'event/thread.h', 'ztimer.h', 'xtimer.h', 'msg.h', 'timex.h', 'evtimer_mbox.h', 'thread.h', 'mbox.h', 'stdbool.h', 'evtimer_msg.h', 'time_units.h', 'kernel_defines.h']!"
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <stdlib.h>\n#include <unistd.h>\n#include <thread.h>\n#include <sched.h>\n#include <msg.h>\n\n#define STACKSIZE 512\n#define NUM_THREADS 2\n\nvoid *thread_func(void *arg) {\n    kernel_pid_t pid = thread_getpid();\n    printf(\"Thread %d started\\n\", pid);\n    while (1) {\n        printf(\"Thread %d running\\n\", pid);\n        sleep(1);\n    }\n    return NULL;\n}\n\nint main(void) {\n    char stacks[NUM_THREADS][STACKSIZE];\n    kernel_pid_t pids[NUM_THREADS];\n\n    for (int i = 0; i < NUM_THREADS; i++) {\n        pids[i] = thread_create(stacks[i], STACKSIZE, THREAD_PRIORITY_MAIN - 1, 0, thread_func, NULL, \"thread\");\n        if (pids[i] <= KERNEL_PID_UNDEF) {\n            printf(\"Error creating thread %d\\n\", i);\n            return 1;\n        }\n    }\n\n    sleep(5);\n\n    for (int i = 0; i < NUM_THREADS; i++) {\n        thread_t *thread = thread_get(pids[i]);\n        if (thread != NULL) {\n            sched_change_priority(thread, THREAD_PRIORITY_MAIN);\n            printf(\"Changed priority of thread %d\\n\", pids[i]);\n        } else {\n            printf(\"Error getting thread %d\\n\", pids[i]);\n        }\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 5
+}

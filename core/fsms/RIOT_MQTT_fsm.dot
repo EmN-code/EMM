@@ -1,0 +1,21 @@
+// FSM
+digraph {
+	INIT [label=INIT]
+	INIT -> NETWORK_CONNECT [label="NetworkInit Success"]
+	INIT -> ERROR [label="NetworkInit Failure"]
+	NETWORK_CONNECT [label=NETWORK_CONNECT]
+	NETWORK_CONNECT -> MQTT_CONNECT [label="Connect to Broker Success"]
+	NETWORK_CONNECT -> NETWORK_RECONNECT [label="Connect to Broker Failure"]
+	MQTT_CONNECT [label=MQTT_CONNECT]
+	MQTT_CONNECT -> PUBLISH_LOOP [label="MQTTClient_connect Success"]
+	MQTT_CONNECT -> ERROR [label="MQTTClient_connect Failure"]
+	PUBLISH_LOOP [label=PUBLISH_LOOP]
+	PUBLISH_LOOP -> PUBLISH_MESSAGE [label="Always True"]
+	PUBLISH_MESSAGE [label=PUBLISH_MESSAGE]
+	PUBLISH_MESSAGE -> PUBLISH_LOOP [label="Publish Success"]
+	PUBLISH_MESSAGE -> NETWORK_RECONNECT [label="Publish Failure"]
+	NETWORK_RECONNECT [label=NETWORK_RECONNECT]
+	NETWORK_RECONNECT -> MQTT_CONNECT [label="Reconnect Success"]
+	NETWORK_RECONNECT -> ERROR [label="Reconnect Failure"]
+	ERROR [label=ERROR]
+}

@@ -1,0 +1,14 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32 to achieve interrupt handling. The program uses atomic variables to verify if disabling and restoring interrupts works correctly. You should use irq but not use gpio interface. "
+        ]
+    ],
+    "generation": "\n#include \"irq.h\"\n#include \"thread.h\"\n#include \"xtimer.h\"\n#include \"atomic_utils.h\"\n\n#define THREAD_STACKSIZE 512\n#define THREAD_PRIORITY (THREAD_PRIORITY_MAIN - 1)\n\nstatic kernel_pid_t thread_pid;\nstatic volatile atomic_t interrupt_flag = ATOMIC_INIT(0);\n\nvoid *thread_func(void *arg)\n{\n    (void)arg;\n\n    while (1) {\n        if (atomic_load(&interrupt_flag)) {\n            printf(\"Interrupt flag set, disabling interrupts...\\n\");\n            unsigned state = irq_disable();\n            printf(\"Interrupts disabled, performing critical section...\\n\");\n            xtimer_sleep(1);  // Simulate critical section\n            irq_restore(state);\n            printf(\"Interrupts restored, clearing interrupt flag...\\n\");\n            atomic_store(&interrupt_flag, 0);\n        }\n        xtimer_usleep(100000);  // Sleep for 100 ms\n    }\n\n    return NULL;\n}\n\nvoid irq_handler(void)\n{\n    atomic_store(&interrupt_flag, 1);\n    printf(\"Interrupt occurred, setting interrupt flag...\\n\");\n}\n\nint main(void)\n{\n    // Initialize the thread\n    thread_pid = thread_create(\n        thread_stack, THREAD_STACKSIZE, THREAD_PRIORITY,\n        THREAD_CREATE_STACKTEST, thread_func, NULL, \"interrupt_handler\");\n\n    // Register the interrupt handler\n    irq_set_handler(IRQ_NUM, irq_handler);\n\n    // Enable the interrupt\n    irq_enable(IRQ_NUM);\n\n    printf(\"Main thread running, waiting for interrupts...\\n\");\n\n    while (1) {\n        xtimer_usleep(1000000);  // Sleep for 1 second\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

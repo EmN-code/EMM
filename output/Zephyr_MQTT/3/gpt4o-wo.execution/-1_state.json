@@ -1,0 +1,30 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a Zephyr program for the ESP32 that connects to an MQTT broker at 47.102.103.1:1883 to publish state (\u201dwork or not work\u201d) each five seconds. Do not use emcute lib."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: ['E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:2:10: fatal error: zephyr/mqtt/mqtt.h: No such file or directory\\r'] and Invoke the code tool to solve the error and structure the output with a prefix and code block. "
+        ],
+        [
+            "user",
+            "Your answer cannot contain the provided headers and apis from blacklist!): ['zephyr/kernel.h', 'zephyr/mqtt/mqtt.h', 'zephyr/net/socket.h', 'string.h', 'k_timer_start']"
+        ],
+        [
+            "user",
+            "Your answer must contain all the ['zephyr/net/socket.h', 'zephyr/device.h', 'zephyr/net/wifi_mgmt.h', 'zephyr/kernel.h', 'zephyr/net/mqtt.h', 'zephyr/net/coap.h', 'zephyr/net/mqtt_sn.h', 'zephyr/fs/nvs.h']!"
+        ],
+        [
+            "assistant",
+            "prefix: The following code demonstrates a Zephyr application for an ESP32 device. The program uses the Zephyr MQTT API to connect to a broker at IP address 47.102.103.1 on port 1883. It will publish the state 'work' or 'not work' every five seconds without using the emcute library. Instead, it utilizes Zephyr's MQTT client API to manage the connection and data publication. The thread for MQTT is defined to connect and then repeatedly publish the required states. All necessary header files are included to ensure proper functionality. \n block: #include <zephyr/net/wifi_mgmt.h>\n#include <zephyr/net/socket.h>\n#include <zephyr/net/mqtt.h>\n#include <zephyr/net/mqtt_sn.h>\n#include <zephyr/net/coap.h>\n#include <zephyr/kernel.h>\n#include <zephyr/fs/nvs.h>\n#include <zephyr/device.h>\n\n#include <stdio.h>\n#include <stdlib.h>\n\n#define MQTT_CLIENTID \"esp32_client\"\n#define MQTT_BROKER_ADDR \"47.102.103.1\"\n#define MQTT_BROKER_PORT 1883\n\n#define PUBLISH_INTERVAL K_SECONDS(5)\n\nstatic struct mqtt_client client;\nstatic struct sockaddr_in broker;\n\nvoid prepare_mqtt_client(void) {\n    mqtt_client_init(&client);\n    broker.sin_family = AF_INET;\n    broker.sin_port = htons(MQTT_BROKER_PORT);\n    inet_pton(AF_INET, MQTT_BROKER_ADDR, &broker.sin_addr);\n\n    client.broker = &broker;\n    client.client_id.utf8 = (uint8_t *)MQTT_CLIENTID;\n    client.client_id.size = strlen(MQTT_CLIENTID);\n}\n\nvoid publish_state(const char *state) {\n    struct mqtt_publish_param param;\n\n    param.message.topic.qos = MQTT_QOS_0_AT_MOST_ONCE;\n    param.message.topic.topic.utf8 = (uint8_t *)\"state\";\n    param.message.topic.topic.size = strlen(\"state\");\n    param.message.payload.data = (uint8_t *)state;\n    param.message.payload.len = strlen(state);\n\n    mqtt_publish(&client, &param);\n}\n\nstatic void mqtt_thread(void) {\n    prepare_mqtt_client();\n    mqtt_connect(&client);\n\n    while (1) {\n        publish_state(\"work\");\n        k_sleep(PUBLISH_INTERVAL);\n        publish_state(\"not work\");\n        k_sleep(PUBLISH_INTERVAL);\n    }\n\n    mqtt_disconnect(&client);\n}\n\nK_THREAD_DEFINE(mqtt_thread_id, 2048, mqtt_thread, NULL, NULL, NULL,\n                7, 0, 0);\n\nint main(void) {\n    printf(\"Starting MQTT client\\n\");\n    return 0;\n} \n"
+        ]
+    ],
+    "generation": "#include <zephyr/net/wifi_mgmt.h>\n#include <zephyr/net/socket.h>\n#include <zephyr/net/mqtt.h>\n#include <zephyr/net/mqtt_sn.h>\n#include <zephyr/net/coap.h>\n#include <zephyr/kernel.h>\n#include <zephyr/fs/nvs.h>\n#include <zephyr/device.h>\n\n#include <stdio.h>\n#include <stdlib.h>\n\n#define MQTT_CLIENTID \"esp32_client\"\n#define MQTT_BROKER_ADDR \"47.102.103.1\"\n#define MQTT_BROKER_PORT 1883\n\n#define PUBLISH_INTERVAL K_SECONDS(5)\n\nstatic struct mqtt_client client;\nstatic struct sockaddr_in broker;\n\nvoid prepare_mqtt_client(void) {\n    mqtt_client_init(&client);\n    broker.sin_family = AF_INET;\n    broker.sin_port = htons(MQTT_BROKER_PORT);\n    inet_pton(AF_INET, MQTT_BROKER_ADDR, &broker.sin_addr);\n\n    client.broker = &broker;\n    client.client_id.utf8 = (uint8_t *)MQTT_CLIENTID;\n    client.client_id.size = strlen(MQTT_CLIENTID);\n}\n\nvoid publish_state(const char *state) {\n    struct mqtt_publish_param param;\n\n    param.message.topic.qos = MQTT_QOS_0_AT_MOST_ONCE;\n    param.message.topic.topic.utf8 = (uint8_t *)\"state\";\n    param.message.topic.topic.size = strlen(\"state\");\n    param.message.payload.data = (uint8_t *)state;\n    param.message.payload.len = strlen(state);\n\n    mqtt_publish(&client, &param);\n}\n\nstatic void mqtt_thread(void) {\n    prepare_mqtt_client();\n    mqtt_connect(&client);\n\n    while (1) {\n        publish_state(\"work\");\n        k_sleep(PUBLISH_INTERVAL);\n        publish_state(\"not work\");\n        k_sleep(PUBLISH_INTERVAL);\n    }\n\n    mqtt_disconnect(&client);\n}\n\nK_THREAD_DEFINE(mqtt_thread_id, 2048, mqtt_thread, NULL, NULL, NULL,\n                7, 0, 0);\n\nint main(void) {\n    printf(\"Starting MQTT client\\n\");\n    return 0;\n}",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 2
+}

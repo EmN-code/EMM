@@ -1,0 +1,21 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:17:55: error: 'sched_active_thread' undeclared (first use in this function); did you mean 'sched_num_threads'?",
+        "/root/RIOT/examples/LLM_Gen/main.c:27:55: error: 'sched_active_thread' undeclared (first use in this function); did you mean 'sched_num_threads'?",
+        "/root/RIOT/examples/LLM_Gen/main.c:39:9: error: implicit declaration of function 'thread_stack'; did you mean 'thread_sleep'? [-Werror=implicit-function-declaration]",
+        "/root/RIOT/examples/LLM_Gen/main.c:39:9: error: passing argument 1 of 'thread_create' makes pointer from integer without a cast [-Werror=int-conversion]",
+        "/root/RIOT/examples/LLM_Gen/main.c:50:9: error: passing argument 1 of 'thread_create' makes pointer from integer without a cast [-Werror=int-conversion]",
+        "/root/RIOT/examples/LLM_Gen/main.c:62:5: error: implicit declaration of function 'thread_change_priority'; did you mean 'sched_change_priority'? [-Werror=implicit-function-declaration]"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32. It starts two threads and change priority at runtime."
+        ]
+    ],
+    "generation": "\n#include \"thread.h\"\n#include \"xtimer.h\"\n#include \"periph/gpio.h\"\n#include \"log.h\"\n\n#define MAIN_QUEUE_SIZE     (8)\nstatic msg_t _main_msg_queue[MAIN_QUEUE_SIZE];\n\nstatic kernel_pid_t thread1_pid;\nstatic kernel_pid_t thread2_pid;\n\nstatic void *thread1(void *arg)\n{\n    (void)arg;\n    while (1) {\n        LOG_INFO(\"Thread 1 running at priority %d\\n\", sched_active_thread->priority);\n        xtimer_sleep(1);\n    }\n    return NULL;\n}\n\nstatic void *thread2(void *arg)\n{\n    (void)arg;\n    while (1) {\n        LOG_INFO(\"Thread 2 running at priority %d\\n\", sched_active_thread->priority);\n        xtimer_sleep(1);\n    }\n    return NULL;\n}\n\nint main(void)\n{\n    msg_init_queue(_main_msg_queue, MAIN_QUEUE_SIZE);\n\n    // Create thread 1 with priority 3\n    thread1_pid = thread_create(\n        thread_stack(thread1),\n        THREAD_STACKSIZE_DEFAULT,\n        THREAD_PRIORITY_MAIN - 1,\n        THREAD_CREATE_STACKTEST,\n        thread1,\n        NULL,\n        \"thread1\"\n    );\n\n    // Create thread 2 with priority 4\n    thread2_pid = thread_create(\n        thread_stack(thread2),\n        THREAD_STACKSIZE_DEFAULT,\n        THREAD_PRIORITY_MAIN - 2,\n        THREAD_CREATE_STACKTEST,\n        thread2,\n        NULL,\n        \"thread2\"\n    );\n\n    // Change thread priorities at runtime\n    xtimer_sleep(5);\n    LOG_INFO(\"Changing thread 1 priority to 5\\n\");\n    thread_change_priority(thread1_pid, THREAD_PRIORITY_MAIN - 3, false);\n\n    xtimer_sleep(5);\n    LOG_INFO(\"Changing thread 2 priority to 6\\n\");\n    thread_change_priority(thread2_pid, THREAD_PRIORITY_MAIN - 4, false);\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

@@ -1,0 +1,31 @@
+{
+    "error": [
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:40:13: error: conflicting types for 'mqtt_connect'; have 'void(void)'",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:53:16: error: 'struct mqtt_client' has no member named 'broker_len'; did you mean 'broker'?",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:59:25: error: 'client_ctx.user_name' is a pointer; did you mean to use '->'?",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:60:25: error: 'client_ctx.user_name' is a pointer; did you mean to use '->'?",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:61:24: error: 'client_ctx.password' is a pointer; did you mean to use '->'?",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:62:24: error: 'client_ctx.password' is a pointer; did you mean to use '->'?",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:63:15: error: 'struct mqtt_client' has no member named 'socket'",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:65:10: error: too many arguments to function 'mqtt_connect'",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:65:8: error: void value not ignored as it ought to be",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:78:32: error: 'struct mqtt_topic' has no member named 'utf8'",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:79:32: error: 'struct mqtt_topic' has no member named 'size'",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:80:34: error: 'struct mqtt_binstr' has no member named 'utf8'",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:81:34: error: 'struct mqtt_binstr' has no member named 'size'",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:82:27: error: 'struct mqtt_publish_message' has no member named 'payload_len'; did you mean 'payload'?",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:83:26: error: 'struct mqtt_publish_message' has no member named 'qos'\r",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:84:26: error: 'struct mqtt_publish_message' has no member named 'retained'\r"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a Zephyr program for the ESP32 that connects to an MQTT broker at 47.102.103.1:1883 to publish state (\u201dwork or not work\u201d) each five seconds. Do not use emcute lib."
+        ]
+    ],
+    "generation": "\n#include <zephyr/kernel.h>\n#include <zephyr/device.h>\n#include <zephyr/drivers/gpio.h>\n#include <zephyr/net/socket.h>\n#include <zephyr/net/mqtt.h>\n#include <zephyr/net/net_mgmt.h>\n#include <zephyr/net/net_if.h>\n#include <zephyr/net/wifi_mgmt.h>\n\n#define WIFI_SSID \"your_wifi_ssid\"\n#define WIFI_PSK \"your_wifi_password\"\n\n#define MQTT_BROKER_IP \"47.102.103.1\"\n#define MQTT_BROKER_PORT 1883\n#define MQTT_TOPIC \"device/state\"\n\n#define SLEEP_TIME_MS   5000\n\nstatic struct mqtt_client client_ctx;\nstatic uint8_t rx_buffer[100];\nstatic uint8_t tx_buffer[100];\nstatic struct mqtt_publish_param publish_param;\n\nstatic void wifi_connect(void)\n{\n    struct net_if *iface = net_if_get_default();\n    struct wifi_connect_req_params params = {\n        .ssid = WIFI_SSID,\n        .ssid_length = strlen(WIFI_SSID),\n        .psk = WIFI_PSK,\n        .psk_length = strlen(WIFI_PSK),\n        .channel = 0,\n        .security = WIFI_SECURITY_TYPE_PSK,\n    };\n\n    net_mgmt(NET_REQUEST_WIFI_CONNECT, iface, &params, sizeof(params));\n}\n\nstatic void mqtt_connect(void)\n{\n    int rc;\n    struct sockaddr_storage broker;\n    struct sockaddr_in *broker4 = (struct sockaddr_in *)&broker;\n\n    broker4->sin_family = AF_INET;\n    broker4->sin_port = htons(MQTT_BROKER_PORT);\n    inet_pton(AF_INET, MQTT_BROKER_IP, &broker4->sin_addr);\n\n    mqtt_client_init(&client_ctx);\n\n    client_ctx.broker = (struct sockaddr *)&broker;\n    client_ctx.broker_len = sizeof(broker);\n    client_ctx.client_id.utf8 = (uint8_t *)\"zephyr_client\";\n    client_ctx.client_id.size = strlen(\"zephyr_client\");\n    client_ctx.protocol_version = MQTT_VERSION_3_1_1;\n    client_ctx.clean_session = 1;\n    client_ctx.keepalive = 60;\n    client_ctx.user_name.utf8 = NULL;\n    client_ctx.user_name.size = 0;\n    client_ctx.password.utf8 = NULL;\n    client_ctx.password.size = 0;\n    client_ctx.socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);\n\n    rc = mqtt_connect(&client_ctx);\n    if (rc) {\n        printk(\"MQTT connect failed: %d\\n\", rc);\n        return;\n    }\n\n    printk(\"MQTT connected\\n\");\n}\n\nstatic void publish_state(const char *state)\n{\n    int rc;\n\n    publish_param.message.topic.utf8 = (uint8_t *)MQTT_TOPIC;\n    publish_param.message.topic.size = strlen(MQTT_TOPIC);\n    publish_param.message.payload.utf8 = (uint8_t *)state;\n    publish_param.message.payload.size = strlen(state);\n    publish_param.message.payload_len = strlen(state);\n    publish_param.message.qos = MQTT_QOS_1_AT_LEAST_ONCE;\n    publish_param.message.retained = 0;\n    publish_param.dup_flag = 0;\n\n    rc = mqtt_publish(&client_ctx, &publish_param);\n    if (rc) {\n        printk(\"MQTT publish failed: %d\\n\", rc);\n    } else {\n        printk(\"MQTT state published: %s\\n\", state);\n    }\n}\n\nint main(void)\n{\n    wifi_connect();\n    mqtt_connect();\n\n    while (1) {\n        publish_state(\"work\");\n        k_sleep(K_MSEC(SLEEP_TIME_MS));\n        publish_state(\"not work\");\n        k_sleep(K_MSEC(SLEEP_TIME_MS));\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

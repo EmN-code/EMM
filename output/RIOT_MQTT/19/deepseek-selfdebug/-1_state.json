@@ -1,0 +1,20 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:6:10: fatal error: net/mqtt.h: No such file or directory"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to an MQTT broker at\u00a047.102.103.1:1883\u00a0to publish state (\u201dwork or not work\u201d) each five seconds. Do not use emcute lib."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: ['/root/RIOT/examples/LLM_Gen/main.c:5:10: fatal error: net/mqtt.h: No such file or directory'] and Invoke the code tool to solve the error and structure the output with a prefix and code block."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include <xtimer.h>\n#include <net/sock/tcp.h>\n#include <net/mqtt.h>\n\n#define MQTT_BROKER_IP \"47.102.103.1\"\n#define MQTT_BROKER_PORT 1883\n#define MQTT_TOPIC \"state\"\n#define MQTT_MESSAGE \"work\"\n#define MQTT_QOS 0\n#define MQTT_RETAIN 0\n#define MQTT_KEEPALIVE 60\n#define MQTT_CLEAN_SESSION 1\n\nstatic void mqtt_connect(sock_tcp_t *sock)\n{\n    struct sockaddr_in server;\n    server.sin_family = AF_INET;\n    server.sin_port = htons(MQTT_BROKER_PORT);\n    inet_pton(AF_INET, MQTT_BROKER_IP, &server.sin_addr);\n\n    sock_tcp_connect(sock, (struct sockaddr *)&server, 0);\n}\n\nstatic void mqtt_publish(sock_tcp_t *sock)\n{\n    mqtt_publish_t pub;\n    pub.topic = MQTT_TOPIC;\n    pub.payload = MQTT_MESSAGE;\n    pub.payload_len = strlen(MQTT_MESSAGE);\n    pub.qos = MQTT_QOS;\n    pub.retain = MQTT_RETAIN;\n\n    mqtt_client_publish(sock, &pub);\n}\n\nint main(void)\n{\n    sock_tcp_t sock;\n    sock_tcp_create(&sock, NULL, NULL, 0);\n\n    mqtt_connect(&sock);\n\n    while (1) {\n        mqtt_publish(&sock);\n        xtimer_sleep(5);\n    }\n\n    sock_tcp_close(&sock);\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 11
+}

@@ -1,0 +1,16 @@
+{
+    "error": [
+        "hello-world.c:8:10: fatal error: mqtt-transport.h: No such file or directory"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a Contiki program for the NRF52840 that connects to an MQTT broker at 47.102.103.1:1883 to publish state (\u201dwork or not work\u201d) each five seconds."
+        ]
+    ],
+    "generation": "\n#include \"contiki.h\"\n#include \"net/netstack.h\"\n#include \"sys/etimer.h\"\n#include \"lib/random.h\"\n#include \"dev/leds.h\"\n#include \"mqtt.h\"\n#include \"mqtt-transport.h\"\n#include \"mqtt-packet.h\"\n#include \"mqtt-strings.h\"\n#include \"mqtt-process.h\"\n\n#define MQTT_BROKER_IP \"47.102.103.1\"\n#define MQTT_BROKER_PORT 1883\n#define MQTT_TOPIC \"state\"\n#define MQTT_CLIENT_ID \"nrf52840_client\"\n\n#define PUBLISH_INTERVAL (5 * CLOCK_SECOND)\n\nstatic struct mqtt_connection conn;\nstatic struct etimer publish_timer;\n\nstatic void\nmqtt_connect(void)\n{\n    mqtt_connect_params_t connect_params = {\n        .client_id = MQTT_CLIENT_ID,\n        .keep_alive = 60,\n        .clean_session = 1,\n        .will_topic = NULL,\n        .will_message = NULL,\n        .will_qos = 0,\n        .will_retain = 0,\n        .username = NULL,\n        .password = NULL\n    };\n\n    mqtt_connect(&conn, &connect_params);\n}\n\nstatic void\nmqtt_publish(const char *state)\n{\n    mqtt_publish_params_t publish_params = {\n        .topic = MQTT_TOPIC,\n        .payload = state,\n        .payload_len = strlen(state),\n        .qos = 0,\n        .retain = 0\n    };\n\n    mqtt_publish(&conn, &publish_params);\n}\n\nPROCESS(mqtt_client_process, \"MQTT Client Process\");\nAUTOSTART_PROCESSES(&mqtt_client_process);\n\nPROCESS_THREAD(mqtt_client_process, ev, data)\n{\n    static char state[12];\n    static int work_state = 1;\n\n    PROCESS_BEGIN();\n\n    mqtt_init(&conn, NULL, NULL, 0, NULL, NULL, 0);\n    mqtt_transport_open(&conn, MQTT_BROKER_IP, MQTT_BROKER_PORT);\n\n    mqtt_connect();\n\n    etimer_set(&publish_timer, PUBLISH_INTERVAL);\n\n    while(1) {\n        PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&publish_timer));\n\n        if(work_state) {\n            strcpy(state, \"work\");\n        } else {\n            strcpy(state, \"not work\");\n        }\n\n        mqtt_publish(state);\n\n        work_state = !work_state;\n\n        etimer_reset(&publish_timer);\n    }\n\n    PROCESS_END();\n}\n\nint main(void)\n{\n    process_start(&mqtt_client_process, NULL);\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

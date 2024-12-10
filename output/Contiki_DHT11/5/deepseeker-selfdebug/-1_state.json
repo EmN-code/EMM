@@ -1,0 +1,18 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop Contiki code on an NRF52840. It read dht11 each five seconds. The dht11 connects to gpio 2."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: [\"hello-world.c:17:5: error: implicit declaration of function 'configure' [-Werror=implicit-function-declaration]\", \"hello-world.c:27:28: error: implicit declaration of function 'value' [-Werror=implicit-function-declaration]\", \"hello-world.c:46:5: error: implicit declaration of function 'contiki_init' [-Werror=implicit-function-declaration]\"] and Invoke the code tool to solve the error and structure the output with a prefix and code block."
+        ]
+    ],
+    "generation": "\n#include \"contiki.h\"\n#include \"dht11-sensor.h\"\n#include <stdio.h>\n\nPROCESS(dht11_read_process, \"DHT11 Read Process\");\nAUTOSTART_PROCESSES(&dht11_read_process);\n\n/* Function prototypes */\nint configure(int type, int c);\nint value(int type);\nvoid contiki_init(void);\n\nPROCESS_THREAD(dht11_read_process, ev, data)\n{\n    static struct etimer timer;\n    static int humidity_integer, humidity_decimal, temperature_integer, temperature_decimal;\n\n    PROCESS_BEGIN();\n\n    /* Configure the DHT11 sensor */\n    configure(DHT11_CONFIGURE_GPIO_PORT, 0);\n    configure(DHT11_CONFIGURE_GPIO_PIN, 2);\n    configure(SENSORS_HW_INIT, 0);\n\n    /* Set the timer to read the sensor every 5 seconds */\n    etimer_set(&timer, CLOCK_SECOND * 5);\n\n    while(1) {\n        PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&timer));\n\n        /* Read the sensor values */\n        humidity_integer = value(DHT11_VALUE_HUMIDITY_INTEGER);\n        humidity_decimal = value(DHT11_VALUE_HUMIDITY_DECIMAL);\n        temperature_integer = value(DHT11_VALUE_TEMPERATURE_INTEGER);\n        temperature_decimal = value(DHT11_VALUE_TEMPERATURE_DECIMAL);\n\n        /* Print the values */\n        printf(\"Humidity: %d.%d %%, Temperature: %d.%d C\\n\",\n               humidity_integer, humidity_decimal,\n               temperature_integer, temperature_decimal);\n\n        /* Reset the timer */\n        etimer_reset(&timer);\n    }\n\n    PROCESS_END();\n}\n\nint main(void)\n{\n    contiki_init();\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 9
+}

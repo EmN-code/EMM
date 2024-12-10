@@ -1,0 +1,16 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:19:5: error: implicit declaration of function 'inet_pton' [-Werror=implicit-function-declaration]"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to a UDP server at\u00a0`47.102.103.1:20001`\u00a0to send device state (\u201dwork or not work\u201d) by UDP method every five seconds."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include <xtimer.h>\n#include \"net/sock/udp.h\"\n#include \"net/ipv4/addr.h\"\n\n#define SERVER_IP \"47.102.103.1\"\n#define SERVER_PORT 20001\n#define DEVICE_STATE \"work\"  // Change this to \"not work\" if needed\n#define INTERVAL (5 * 1000000U)  // 5 seconds in microseconds\n\nstatic sock_udp_ep_t server = { .family = AF_INET, .port = SERVER_PORT };\n\nint main(void)\n{\n    // Initialize the server endpoint with the given IP address\n    ipv4_addr_t server_addr;\n    if (ipv4_addr_from_str(&server_addr, SERVER_IP) == NULL) {\n        puts(\"Error: invalid server IP address\");\n        return 1;\n    }\n    server.addr.ipv4 = server_addr;\n\n    // Create a UDP socket\n    sock_udp_t sock;\n    if (sock_udp_create(&sock, NULL, &server, 0) < 0) {\n        puts(\"Error: failed to create UDP socket\");\n        return 1;\n    }\n\n    char buf[64];\n    while (1) {\n        // Prepare the message to send\n        snprintf(buf, sizeof(buf), \"Device state: %s\", DEVICE_STATE);\n\n        // Send the message to the server\n        if (sock_udp_send(&sock, buf, strlen(buf), &server) < 0) {\n            puts(\"Error: failed to send UDP message\");\n        } else {\n            printf(\"Sent: %s\\n\", buf);\n        }\n\n        // Wait for 5 seconds before sending the next message\n        xtimer_usleep(INTERVAL);\n    }\n\n    // Close the socket (this part is unreachable in this example)\n    sock_udp_close(&sock);\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

@@ -1,0 +1,16 @@
+{
+    "error": [
+        "hello-world.c:4:10: fatal error: dev/dht11.h: No such file or directory"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop Contiki code on an NRF52840. It read dht11 each five seconds. The dht11 connects to gpio 2."
+        ]
+    ],
+    "generation": "\n#include \"contiki.h\"\n#include \"dev/gpio.h\"\n#include \"dev/dht11.h\"\n#include <stdio.h>\n\n#define DHT11_PIN 2\n\nPROCESS(dht11_read_process, \"DHT11 Read Process\");\nAUTOSTART_PROCESSES(&dht11_read_process);\n\nPROCESS_THREAD(dht11_read_process, ev, data)\n{\n    static struct etimer timer;\n    static int temperature, humidity;\n\n    PROCESS_BEGIN();\n\n    // Initialize GPIO for DHT11\n    gpio_set_input(DHT11_PIN);\n\n    while(1) {\n        // Set timer to 5 seconds\n        etimer_set(&timer, CLOCK_SECOND * 5);\n\n        // Wait for the timer to expire\n        PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&timer));\n\n        // Read DHT11 data\n        if(dht11_read(DHT11_PIN, &temperature, &humidity) == DHT11_SUCCESS) {\n            printf(\"Temperature: %d C, Humidity: %d %%\\n\", temperature, humidity);\n        } else {\n            printf(\"Failed to read DHT11 sensor\\n\");\n        }\n    }\n\n    PROCESS_END();\n}\n\nint main(void)\n{\n    // Initialize Contiki\n    contiki_init();\n\n    // Start the DHT11 read process\n    process_start(&dht11_read_process, NULL);\n\n    // Enter the Contiki main loop\n    while(1) {\n        process_run();\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

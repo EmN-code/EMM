@@ -1,0 +1,21 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:19:5: error: function declaration isn't a prototype [-Werror=strict-prototypes]",
+        "/root/RIOT/examples/LLM_Gen/main.c:19:5: error: old-style function definition [-Werror=old-style-definition]"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to an MQTT broker at\u00a047.102.103.1:1883\u00a0to publish state (\u201dwork or not work\u201d) each five seconds. Do not use emcute lib."
+        ],
+        [
+            "assistant",
+            "prefix: To create a RIOT-based program for the ESP32 that connects to an MQTT broker and publishes state every five seconds, we cannot use the emcute library. Thus, we'll make use of low-level socket operations to connect and communicate via MQTT. While we aim to interact at the MQTT protocol level, we'll manage TCP/IP connection using sockets. We'll continuously send publish messages to the broker with the state 'work' or 'not work'. The code initializes the network, connects to the MQTT broker, and sets up an infinite loop for sending the state message every five seconds. \n block: #include <unistd.h>\n#include <string.h>\n#include <stdio.h>\n#include <stdlib.h>\n#include <arpa/inet.h>\n\n#define MQTT_SERVER_IP \"47.102.103.1\"\n#define MQTT_SERVER_PORT 1883\n#define PUBLISH_INTERVAL 5\n#define MQTT_BUFFER_SIZE 1024\n\nvoid mqtt_publish(int sock, const char *topic, const char *message) {\n    char buffer[MQTT_BUFFER_SIZE];\n    memset(buffer, 0, MQTT_BUFFER_SIZE);\n    snprintf(buffer, MQTT_BUFFER_SIZE, \"PUBLISH %s %s\", topic, message); // Simplified publish format\n    send(sock, buffer, strlen(buffer), 0);\n}\n\nint main() {\n    int sock;\n    struct sockaddr_in server_addr;\n\n    sock = socket(AF_INET, SOCK_STREAM, 0);\n    if (sock < 0) {\n        perror(\"Socket creation failed\");\n        return EXIT_FAILURE;\n    }\n\n    server_addr.sin_family = AF_INET;\n    server_addr.sin_port = htons(MQTT_SERVER_PORT);\n\n    if (inet_pton(AF_INET, MQTT_SERVER_IP, &server_addr.sin_addr) <= 0) {\n        perror(\"Invalid address/Address not supported\");\n        return EXIT_FAILURE;\n    }\n\n    if (connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {\n        perror(\"Connection Failed\");\n        return EXIT_FAILURE;\n    }\n\n    printf(\"Connected to MQTT Broker\\n\");\n\n    while (1) {\n        mqtt_publish(sock, \"device/state\", \"work\");\n        sleep(PUBLISH_INTERVAL);\n        mqtt_publish(sock, \"device/state\", \"not work\");\n        sleep(PUBLISH_INTERVAL);\n    }\n\n    close(sock);\n    return EXIT_SUCCESS;\n} \n"
+        ]
+    ],
+    "generation": "#include <unistd.h>\n#include <string.h>\n#include <stdio.h>\n#include <stdlib.h>\n#include <arpa/inet.h>\n\n#define MQTT_SERVER_IP \"47.102.103.1\"\n#define MQTT_SERVER_PORT 1883\n#define PUBLISH_INTERVAL 5\n#define MQTT_BUFFER_SIZE 1024\n\nvoid mqtt_publish(int sock, const char *topic, const char *message) {\n    char buffer[MQTT_BUFFER_SIZE];\n    memset(buffer, 0, MQTT_BUFFER_SIZE);\n    snprintf(buffer, MQTT_BUFFER_SIZE, \"PUBLISH %s %s\", topic, message); // Simplified publish format\n    send(sock, buffer, strlen(buffer), 0);\n}\n\nint main() {\n    int sock;\n    struct sockaddr_in server_addr;\n\n    sock = socket(AF_INET, SOCK_STREAM, 0);\n    if (sock < 0) {\n        perror(\"Socket creation failed\");\n        return EXIT_FAILURE;\n    }\n\n    server_addr.sin_family = AF_INET;\n    server_addr.sin_port = htons(MQTT_SERVER_PORT);\n\n    if (inet_pton(AF_INET, MQTT_SERVER_IP, &server_addr.sin_addr) <= 0) {\n        perror(\"Invalid address/Address not supported\");\n        return EXIT_FAILURE;\n    }\n\n    if (connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {\n        perror(\"Connection Failed\");\n        return EXIT_FAILURE;\n    }\n\n    printf(\"Connected to MQTT Broker\\n\");\n\n    while (1) {\n        mqtt_publish(sock, \"device/state\", \"work\");\n        sleep(PUBLISH_INTERVAL);\n        mqtt_publish(sock, \"device/state\", \"not work\");\n        sleep(PUBLISH_INTERVAL);\n    }\n\n    close(sock);\n    return EXIT_SUCCESS;\n}",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

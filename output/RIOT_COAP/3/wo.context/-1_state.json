@@ -1,0 +1,18 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32, which  sends a CoAP request to an COAP server. The program is configured to send CoAP POST requests \"Hello, COAP Cloud\" to the COAP server at IP address \"47.102.103.1\" and port 5683, with the URI path \"/coap/test\". "
+        ],
+        [
+            "assistant",
+            "prefix: This code is built to run on RIOT OS for an ESP32 device. The code sends a CoAP POST request to a CoAP server located at IP address '47.102.103.1' and on port 5683, with the URI path '/coap/test'. The payload of the CoAP request is the string \"Hello, COAP Cloud\". The response from the server is handled by a callback function, '_resp_handler', which simply prints the response payload to the console. The code uses RIOT's networking stack and its gcoap module. It initializes a CoAP request using `gcoap_req_init`, fills the payload, finishes the request with `coap_opt_finish`, and sends it using `gcoap_req_send`. \n block: #include <stdio.h>\n#include <string.h>\n#include <net/gnrc.h>\n#include <net/gcoap.h>\n#include <net/coap.h>\n\n#define COAP_SERVER_IP  \"47.102.103.1\"\n#define COAP_SERVER_PORT CONFIG_GCOAP_PORT\n#define COAP_URI_PATH \"/coap/test\"\n#define COAP_MESSAGE \"Hello, COAP Cloud\"\n\nstatic void _resp_handler(const gcoap_request_memo_t *memo, coap_pkt_t *pdu, const sock_udp_ep_t *remote) {\n    (void)memo;\n    (void)remote;\n    if (pdu != NULL) {\n        printf(\"Response received: %s\\n\", (char *)pdu->payload);\n    } else {\n        printf(\"No response received\\n\");\n    }\n}\n\nint main(void) {\n    uint8_t buf[CONFIG_GCOAP_PDU_BUF_SIZE];\n    coap_pkt_t pdu;\n    sock_udp_ep_t server = { .family = AF_INET6, .port = COAP_SERVER_PORT };\n\n    ipv6_addr_from_str((ipv6_addr_t *)&server.addr, COAP_SERVER_IP);\n\n    printf(\"GCOAP client example\\n\");\n\n    size_t len = gcoap_req_init(&pdu, buf, sizeof(buf), COAP_METHOD_POST, COAP_URI_PATH);\n    memcpy(pdu.payload, COAP_MESSAGE, sizeof(COAP_MESSAGE));\n\n    len += sizeof(COAP_MESSAGE);\n    coap_opt_finish(&pdu, COAP_OPT_FINISH_NONE);\n\n    gcoap_req_send(buf, len, &server, _resp_handler, NULL, GCOAP_SOCKET_TYPE_UDP);\n\n    return 0;\n} \n"
+        ]
+    ],
+    "generation": "#include <stdio.h>\n#include <string.h>\n#include <net/gnrc.h>\n#include <net/gcoap.h>\n#include <net/coap.h>\n\n#define COAP_SERVER_IP  \"47.102.103.1\"\n#define COAP_SERVER_PORT CONFIG_GCOAP_PORT\n#define COAP_URI_PATH \"/coap/test\"\n#define COAP_MESSAGE \"Hello, COAP Cloud\"\n\nstatic void _resp_handler(const gcoap_request_memo_t *memo, coap_pkt_t *pdu, const sock_udp_ep_t *remote) {\n    (void)memo;\n    (void)remote;\n    if (pdu != NULL) {\n        printf(\"Response received: %s\\n\", (char *)pdu->payload);\n    } else {\n        printf(\"No response received\\n\");\n    }\n}\n\nint main(void) {\n    uint8_t buf[CONFIG_GCOAP_PDU_BUF_SIZE];\n    coap_pkt_t pdu;\n    sock_udp_ep_t server = { .family = AF_INET6, .port = COAP_SERVER_PORT };\n\n    ipv6_addr_from_str((ipv6_addr_t *)&server.addr, COAP_SERVER_IP);\n\n    printf(\"GCOAP client example\\n\");\n\n    size_t len = gcoap_req_init(&pdu, buf, sizeof(buf), COAP_METHOD_POST, COAP_URI_PATH);\n    memcpy(pdu.payload, COAP_MESSAGE, sizeof(COAP_MESSAGE));\n\n    len += sizeof(COAP_MESSAGE);\n    coap_opt_finish(&pdu, COAP_OPT_FINISH_NONE);\n\n    gcoap_req_send(buf, len, &server, _resp_handler, NULL, GCOAP_SOCKET_TYPE_UDP);\n\n    return 0;\n}",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

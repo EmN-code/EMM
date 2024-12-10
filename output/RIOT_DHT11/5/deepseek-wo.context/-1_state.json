@@ -1,0 +1,20 @@
+{
+    "error": [
+        "/root/RIOT/cpu/esp32/include/periph_cpu.h:96:29: error: passing argument 2 of 'dht_init' makes pointer from integer without a cast [-Werror=int-conversion]"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32. It read dht11 each five seconds. The dht11 connects to gpio 2."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: [\"/root/RIOT/examples/LLM_Gen/main.c:16:24: error: 'DHT_TYPE_DHT11' undeclared (first use in this function)\", \"/root/RIOT/examples/LLM_Gen/main.c:16:9: error: too many arguments to function 'dht_init'\"] and Invoke the code tool to solve the error and structure the output with a prefix and code block. "
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include \"xtimer.h\"\n#include \"periph/gpio.h\"\n#include \"dht.h\"\n\n#define DHT_PIN             GPIO_PIN(0, 2)\n#define SLEEP_INTERVAL      (5 * 1000000U)  // 5 seconds\n\nint main(void)\n{\n    dht_t dev;\n    int16_t temp, hum;\n\n    if (dht_init(&dev, DHT_PIN) != DHT_OK) {\n        puts(\"DHT11 initialization failed\");\n        return 1;\n    }\n\n    while (1) {\n        if (dht_read(&dev, &temp, &hum) != DHT_OK) {\n            puts(\"Failed to read data from DHT11\");\n        } else {\n            printf(\"Temperature: %d.%d\u00b0C, Humidity: %d.%d%%\\n\",\n                   temp / 10, temp % 10, hum / 10, hum % 10);\n        }\n\n        xtimer_usleep(SLEEP_INTERVAL);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 11
+}

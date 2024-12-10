@@ -1,0 +1,22 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32. It starts two threads and change priority at runtime."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: ['/root/RIOT/examples/LLM_Gen/main.c:5: error: \"THREAD_STACKSIZE_MAIN\" redefined [-Werror]', '/root/RIOT/examples/LLM_Gen/main.c:6: error: \"THREAD_CREATE_STACKTEST\" redefined [-Werror]'] and Invoke the code tool to solve the error and structure the output with a prefix and code block. "
+        ],
+        [
+            "assistant",
+            "prefix: This solution addresses the problem of defining two threads in a RIOT application for ESP32 and modifying their priorities dynamically. The code initializes the threads with custom stack sizes and priorities and provides a mechanism to change these priorities after creation. To address the errors identified, the solution avoids the redefinition of 'THREAD_STACKSIZE_MAIN' and 'THREAD_CREATE_STACKTEST' by only including them once if they are not defined. This ensures no compilation warnings or errors due to redefinition, which can happen when multiple headers or configurations are included that may already define these constants. \n block: // Include necessary RIOT headers\n#include \"thread.h\"\n#include \"mutex.h\"\n\n// Define stack size and priorities; avoid redefinition errors\n#ifndef THREAD_STACKSIZE_MAIN\n#define THREAD_STACKSIZE_MAIN (THREAD_STACKSIZE_DEFAULT)\n#endif\n\n#ifndef THREAD_CREATE_STACKTEST\n#define THREAD_CREATE_STACKTEST (8)\n#endif\n\n// Define thread function prototypes\nvoid *thread_func1(void *arg);\nvoid *thread_func2(void *arg);\n\n// Allocate stack space for threads\nchar stack1[THREAD_STACKSIZE_MAIN];\nchar stack2[THREAD_STACKSIZE_MAIN];\n\nint main(void) {\n    kernel_pid_t thread1_pid, thread2_pid;\n    // Originally set priorities for threads\n    uint8_t priority1 = 5;\n    uint8_t priority2 = 6;\n\n    // Create threads\n    thread1_pid = thread_create(stack1, sizeof(stack1), priority1, \n                                THREAD_CREATE_STACKTEST, thread_func1, NULL, \"thread1\");\n    thread2_pid = thread_create(stack2, sizeof(stack2), priority2, \n                                THREAD_CREATE_STACKTEST, thread_func2, NULL, \"thread2\");\n\n    // Change priority at runtime\n    sched_change_priority(thread_get(thread1_pid), 3);\n    sched_change_priority(thread_get(thread2_pid), 4);\n\n    return 0;\n}\n\nvoid *thread_func1(void *arg) {\n    // Thread 1 functionality\n    while (1) {\n        // Perform operations\n    }\n    return NULL;\n}\n\nvoid *thread_func2(void *arg) {\n    // Thread 2 functionality\n    while (1) {\n        // Perform operations\n    }\n    return NULL;\n} \n"
+        ]
+    ],
+    "generation": "// Include necessary RIOT headers\n#include \"thread.h\"\n#include \"mutex.h\"\n\n// Define stack size and priorities; avoid redefinition errors\n#ifndef THREAD_STACKSIZE_MAIN\n#define THREAD_STACKSIZE_MAIN (THREAD_STACKSIZE_DEFAULT)\n#endif\n\n#ifndef THREAD_CREATE_STACKTEST\n#define THREAD_CREATE_STACKTEST (8)\n#endif\n\n// Define thread function prototypes\nvoid *thread_func1(void *arg);\nvoid *thread_func2(void *arg);\n\n// Allocate stack space for threads\nchar stack1[THREAD_STACKSIZE_MAIN];\nchar stack2[THREAD_STACKSIZE_MAIN];\n\nint main(void) {\n    kernel_pid_t thread1_pid, thread2_pid;\n    // Originally set priorities for threads\n    uint8_t priority1 = 5;\n    uint8_t priority2 = 6;\n\n    // Create threads\n    thread1_pid = thread_create(stack1, sizeof(stack1), priority1, \n                                THREAD_CREATE_STACKTEST, thread_func1, NULL, \"thread1\");\n    thread2_pid = thread_create(stack2, sizeof(stack2), priority2, \n                                THREAD_CREATE_STACKTEST, thread_func2, NULL, \"thread2\");\n\n    // Change priority at runtime\n    sched_change_priority(thread_get(thread1_pid), 3);\n    sched_change_priority(thread_get(thread2_pid), 4);\n\n    return 0;\n}\n\nvoid *thread_func1(void *arg) {\n    // Thread 1 functionality\n    while (1) {\n        // Perform operations\n    }\n    return NULL;\n}\n\nvoid *thread_func2(void *arg) {\n    // Thread 2 functionality\n    while (1) {\n        // Perform operations\n    }\n    return NULL;\n}",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 3
+}

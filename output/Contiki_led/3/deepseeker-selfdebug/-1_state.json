@@ -1,0 +1,20 @@
+{
+    "error": [
+        "hello-world.c:3:10: fatal error: thread.h: No such file or directory"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop Contiki code on an NRF52840. It read dht11 each five seconds and turn on a rgb_led."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: ['hello-world.c:3:10: fatal error: thread.h: No such file or directory'] and Invoke the code tool to solve the error and structure the output with a prefix and code block."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <thread.h>\n#include <dev/gpio-hal.h>\n#include <drivers/dht11.h>\n\n#define DHT11_PIN GPIO_PIN(0, 15)  // Example GPIO pin for DHT11\n#define RGB_LED_RED GPIO_PIN(0, 16)  // Example GPIO pin for RGB LED Red\n#define RGB_LED_GREEN GPIO_PIN(0, 17)  // Example GPIO pin for RGB LED Green\n#define RGB_LED_BLUE GPIO_PIN(0, 18)  // Example GPIO pin for RGB LED Blue\n\n#define RGB_LED_WHITE   (RGB_LED_RED | RGB_LED_GREEN | RGB_LED_BLUE)\n#define RGB_LED_YELLOW  (RGB_LED_RED | RGB_LED_GREEN)\n#define RGB_LED_CYAN    (RGB_LED_GREEN | RGB_LED_BLUE)\n#define RGB_LED_MAGENTA (RGB_LED_RED | RGB_LED_BLUE)\n\nvoid read_dht11_and_set_led(void) {\n    int temperature, humidity;\n    while (1) {\n        if (dht11_read(DHT11_PIN, &temperature, &humidity) == 0) {\n            printf(\"Temperature: %d C, Humidity: %d %%\\n\", temperature, humidity);\n            // Turn on the RGB LED based on the temperature reading\n            if (temperature < 20) {\n                gpio_set(RGB_LED_BLUE);\n                gpio_clear(RGB_LED_RED | RGB_LED_GREEN);\n            } else if (temperature >= 20 && temperature < 30) {\n                gpio_set(RGB_LED_GREEN);\n                gpio_clear(RGB_LED_RED | RGB_LED_BLUE);\n            } else {\n                gpio_set(RGB_LED_RED);\n                gpio_clear(RGB_LED_GREEN | RGB_LED_BLUE);\n            }\n        } else {\n            printf(\"Failed to read DHT11 sensor\\n\");\n        }\n        thread_sleep(5 * 1000 * 1000);  // Sleep for 5 seconds\n    }\n}\n\nint main(void) {\n    gpio_init(DHT11_PIN, GPIO_OUT);\n    gpio_init(RGB_LED_RED, GPIO_OUT);\n    gpio_init(RGB_LED_GREEN, GPIO_OUT);\n    gpio_init(RGB_LED_BLUE, GPIO_OUT);\n\n    thread_create(NULL, 1024, THREAD_PRIORITY_MAIN - 1, THREAD_CREATE_STACKTEST, read_dht11_and_set_led, NULL, \"dht11_led\");\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 11
+}

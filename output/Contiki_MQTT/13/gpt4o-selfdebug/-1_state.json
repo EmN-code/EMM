@@ -1,0 +1,22 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a Contiki program for the NRF52840 that connects to an MQTT broker at 47.102.103.1:1883 to publish state (\u201dwork or not work\u201d) each five seconds."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: ['hello-world.c:3:10: fatal error: net/rime/rime.h: No such file or directory'] and Invoke the code tool to solve the error and structure the output with a prefix and code block."
+        ],
+        [
+            "assistant",
+            "prefix: The error indicates that there is an inclusion of a non-existent or incorrect path for the header file 'rime.h'. To resolve this, ensure to use the correct Contiki headers based on your needs. This example provides a simple Contiki process that connects to an MQTT broker using the 'mqtt.h' library, and periodically publishes a state to the MQTT broker. Below is the corrected code. \n block: #include \"contiki.h\"\n#include \"mqtt.h\"\n#include \"sys/etimer.h\"\n\nPROCESS(mqtt_publisher_process, \"MQTT Publisher\");\nAUTOSTART_PROCESSES(&mqtt_publisher_process);\n\nstatic struct etimer timer;\nstatic struct mqtt_connection conn;\n\n#define BROKER_IP_ADDR \"47.102.103.1\"\n#define BROKER_PORT 1883\n#define PUB_TOPIC \"device/state\"\n#define STATE \"work\"\n#define OFF_STATE \"not work\"\n\nstatic char client_id[64];\n\nPROCESS_THREAD(mqtt_publisher_process, ev, data) {\n  PROCESS_BEGIN();\n\n  etimer_set(&timer, CLOCK_SECOND * 5);\n\n  mqtt_register(&conn, &mqtt_publisher_process, client_id, NULL, 1000);\n  mqtt_connect(&conn, BROKER_IP_ADDR, BROKER_PORT, CLOCK_SECOND * 10, MQTT_CLEAN_SESSION_ON);\n\n  while(1) {\n    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&timer));\n\n    if(mqtt_connected(&conn)) {\n      mqtt_publish(&conn, NULL, PUB_TOPIC, (uint8_t *)STATE, sizeof(STATE) - 1, MQTT_QOS_LEVEL_0, MQTT_RETAIN_OFF);\n    }\n\n    etimer_reset(&timer);\n  }\n\n  PROCESS_END();\n} \n"
+        ]
+    ],
+    "generation": "#include \"contiki.h\"\n#include \"mqtt.h\"\n#include \"sys/etimer.h\"\n\nPROCESS(mqtt_publisher_process, \"MQTT Publisher\");\nAUTOSTART_PROCESSES(&mqtt_publisher_process);\n\nstatic struct etimer timer;\nstatic struct mqtt_connection conn;\n\n#define BROKER_IP_ADDR \"47.102.103.1\"\n#define BROKER_PORT 1883\n#define PUB_TOPIC \"device/state\"\n#define STATE \"work\"\n#define OFF_STATE \"not work\"\n\nstatic char client_id[64];\n\nPROCESS_THREAD(mqtt_publisher_process, ev, data) {\n  PROCESS_BEGIN();\n\n  etimer_set(&timer, CLOCK_SECOND * 5);\n\n  mqtt_register(&conn, &mqtt_publisher_process, client_id, NULL, 1000);\n  mqtt_connect(&conn, BROKER_IP_ADDR, BROKER_PORT, CLOCK_SECOND * 10, MQTT_CLEAN_SESSION_ON);\n\n  while(1) {\n    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&timer));\n\n    if(mqtt_connected(&conn)) {\n      mqtt_publish(&conn, NULL, PUB_TOPIC, (uint8_t *)STATE, sizeof(STATE) - 1, MQTT_QOS_LEVEL_0, MQTT_RETAIN_OFF);\n    }\n\n    etimer_reset(&timer);\n  }\n\n  PROCESS_END();\n}",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 2
+}

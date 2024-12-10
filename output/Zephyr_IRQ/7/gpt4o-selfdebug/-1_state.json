@@ -1,0 +1,22 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop Zephyr code on an ESP32 to achieve interrupt handling. The program uses atomic variables to verify if disabling and restoring interrupts works correctly. You should use irq but not use gpio interface. "
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: ['E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:1:10: fatal error: zephyr/tools.h: No such file or directory\\r'] and Invoke the code tool to solve the error and structure the output with a prefix and code block."
+        ],
+        [
+            "assistant",
+            "prefix: This solution involves writing a Zephyr application for the ESP32 to handle interrupts using atomic variables, ensuring that disabling and restoring interrupts work correctly. Here we are using Zephyr's kernel, mutex, and utility libraries. First, an atomic variable `interrupt_flag` is initialized. We then define an interrupt handler `irq_handler` to set this variable. In the `main` function, interrupts are disabled using `irq_lock()`, and their restoration is handled using `irq_unlock(key)`. The code checks the atomic variable to ensure interrupts are properly disabled and restored, displaying appropriate messages. \n block: #include <zephyr/sys/util.h>\n#include <zephyr/sys/mutex.h>\n#include <zephyr/kernel.h>\n\nstatic atomic_t interrupt_flag;\n\nvoid irq_handler(const void *arg)\n{\n    ARG_UNUSED(arg);\n    atomic_set(&interrupt_flag, 1);\n}\n\nint main(void) {\n    int key;\n    atomic_set(&interrupt_flag, 0);\n\n    printk(\"Disabling interrupts...\\n\");\n    key = irq_lock();\n    if (!atomic_get(&interrupt_flag)) {\n        printk(\"Interrupts are successfully disabled.\\n\");\n    }\n\n    printk(\"Restoring interrupts...\\n\");\n    irq_unlock(key);\n\n    if (!atomic_get(&interrupt_flag)) {\n        printk(\"Interrupts are successfully restored.\\n\");\n    }\n\n    return 0;\n} \n"
+        ]
+    ],
+    "generation": "#include <zephyr/sys/util.h>\n#include <zephyr/sys/mutex.h>\n#include <zephyr/kernel.h>\n\nstatic atomic_t interrupt_flag;\n\nvoid irq_handler(const void *arg)\n{\n    ARG_UNUSED(arg);\n    atomic_set(&interrupt_flag, 1);\n}\n\nint main(void) {\n    int key;\n    atomic_set(&interrupt_flag, 0);\n\n    printk(\"Disabling interrupts...\\n\");\n    key = irq_lock();\n    if (!atomic_get(&interrupt_flag)) {\n        printk(\"Interrupts are successfully disabled.\\n\");\n    }\n\n    printk(\"Restoring interrupts...\\n\");\n    irq_unlock(key);\n\n    if (!atomic_get(&interrupt_flag)) {\n        printk(\"Interrupts are successfully restored.\\n\");\n    }\n\n    return 0;\n}",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 2
+}

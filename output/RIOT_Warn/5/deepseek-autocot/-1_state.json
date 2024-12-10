@@ -1,0 +1,14 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32. It reads the DHT11 every 5 seconds and turns on an LED warning when the temperature exceeds a threshold."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <xtimer.h>\n#include <periph/gpio.h>\n#include <dht.h>\n\n#define DHT_PIN             GPIO_PIN(0, 18)  // GPIO pin for DHT11\n#define LED_PIN             GPIO_PIN(0, 21)  // GPIO pin for LED\n#define TEMP_THRESHOLD      25              // Temperature threshold in Celsius\n#define INTERVAL            5               // Interval in seconds\n\ndht_t dht;\ndht_params_t dht_params = { .pin = DHT_PIN };\n\nvoid read_dht11(void) {\n    int16_t temp, hum;\n    if (dht_read(&dht, &temp, &hum) == DHT_OK) {\n        printf(\"Temperature: %d.%d\u00b0C, Humidity: %d.%d%%\\n\", temp / 10, temp % 10, hum / 10, hum % 10);\n        if (temp / 10 > TEMP_THRESHOLD) {\n            gpio_set(LED_PIN);  // Turn on LED\n        } else {\n            gpio_clear(LED_PIN);  // Turn off LED\n        }\n    } else {\n        puts(\"Failed to read from DHT11 sensor\");\n    }\n}\n\nint main(void) {\n    // Initialize DHT11 sensor\n    if (dht_init(&dht, &dht_params) != DHT_OK) {\n        puts(\"Failed to initialize DHT11 sensor\");\n        return 1;\n    }\n\n    // Initialize LED pin\n    gpio_init(LED_PIN, GPIO_OUT);\n    gpio_clear(LED_PIN);  // Ensure LED is off initially\n\n    // Main loop\n    while (1) {\n        read_dht11();\n        xtimer_sleep(INTERVAL);  // Wait for 5 seconds\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

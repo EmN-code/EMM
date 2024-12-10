@@ -1,0 +1,21 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:12:5: error: function declaration isn't a prototype [-Werror=strict-prototypes]",
+        "/root/RIOT/examples/LLM_Gen/main.c:12:5: error: old-style function definition [-Werror=old-style-definition]"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to a UDP server at\u00a0`47.102.103.1:20001`\u00a0to send device state (\u201dwork or not work\u201d) by UDP method every five seconds."
+        ],
+        [
+            "assistant",
+            "prefix: This RIOT program for the ESP32 connects to a UDP server at '47.102.103.1:20001' every five seconds to send the device state, either 'work' or 'not work'. The program uses the C language and standard network programming libraries to establish a socket connection and communicate with the server. The program sets up a socket for UDP communication, configures the server's address structure, and enters a loop that sends the device state at five-second intervals until the program is terminated. Here's the complete code: \n block: #include <stdio.h>\n#include <string.h>\n#include <unistd.h>\n#include <sys/socket.h>\n#include <netinet/in.h>\n#include <arpa/inet.h>\n\n#define SERVER_IP \"47.102.103.1\"\n#define SERVER_PORT 20001\n#define INTERVAL 5 // Interval in seconds\n\nint main() {\n    struct sockaddr_in server_addr;\n    int sockfd;\n    char *device_state = \"work\"; // The state can be switched to \"not work\" as needed\n    \n    // Create socket\n    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {\n        perror(\"Failed to create socket\");\n        return 1;\n    }\n\n    // Setup server address structure\n    memset(&server_addr, 0, sizeof(server_addr));\n    server_addr.sin_family = AF_INET;\n    server_addr.sin_port = htons(SERVER_PORT);\n\n    // Convert IP address from text to binary form\n    if (inet_pton(AF_INET, SERVER_IP, &server_addr.sin_addr) <= 0) {\n        perror(\"Invalid address/ Address not supported\");\n        return 1;\n    }\n\n    while (1) {\n        // Send device status to the server\n        int n = sendto(sockfd, device_state, strlen(device_state), 0, (const struct sockaddr *)&server_addr, sizeof(server_addr));\n        if (n < 0) {\n            perror(\"Failed to send message\");\n        }\n        else {\n            printf(\"Device state '%s' sent to %s:%d\\n\", device_state, SERVER_IP, SERVER_PORT);\n        }\n\n        // Wait for 5 seconds\n        sleep(INTERVAL);\n    }\n\n    // Close socket\n    close(sockfd);\n    return 0;\n} \n"
+        ]
+    ],
+    "generation": "#include <stdio.h>\n#include <string.h>\n#include <unistd.h>\n#include <sys/socket.h>\n#include <netinet/in.h>\n#include <arpa/inet.h>\n\n#define SERVER_IP \"47.102.103.1\"\n#define SERVER_PORT 20001\n#define INTERVAL 5 // Interval in seconds\n\nint main() {\n    struct sockaddr_in server_addr;\n    int sockfd;\n    char *device_state = \"work\"; // The state can be switched to \"not work\" as needed\n    \n    // Create socket\n    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {\n        perror(\"Failed to create socket\");\n        return 1;\n    }\n\n    // Setup server address structure\n    memset(&server_addr, 0, sizeof(server_addr));\n    server_addr.sin_family = AF_INET;\n    server_addr.sin_port = htons(SERVER_PORT);\n\n    // Convert IP address from text to binary form\n    if (inet_pton(AF_INET, SERVER_IP, &server_addr.sin_addr) <= 0) {\n        perror(\"Invalid address/ Address not supported\");\n        return 1;\n    }\n\n    while (1) {\n        // Send device status to the server\n        int n = sendto(sockfd, device_state, strlen(device_state), 0, (const struct sockaddr *)&server_addr, sizeof(server_addr));\n        if (n < 0) {\n            perror(\"Failed to send message\");\n        }\n        else {\n            printf(\"Device state '%s' sent to %s:%d\\n\", device_state, SERVER_IP, SERVER_PORT);\n        }\n\n        // Wait for 5 seconds\n        sleep(INTERVAL);\n    }\n\n    // Close socket\n    close(sockfd);\n    return 0;\n}",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

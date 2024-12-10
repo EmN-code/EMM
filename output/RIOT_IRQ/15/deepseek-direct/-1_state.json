@@ -1,0 +1,16 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:22:5: error: implicit declaration of function 'irq_set' [-Werror=implicit-function-declaration]"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32 to achieve interrupt handling. The program uses atomic variables to verify if disabling and restoring interrupts works correctly. You should use irq but not use gpio interface. "
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <xtimer.h>\n#include <irq.h>\n#include <thread.h>\n\nvolatile int atomic_var = 0;\n\nvoid interrupt_handler(void *arg)\n{\n    (void)arg;\n    printf(\"Interrupt triggered!\\n\");\n    atomic_var = 1; // Set atomic variable to indicate interrupt occurred\n}\n\nint main(void)\n{\n    printf(\"Starting interrupt handling test on ESP32 with RIOT...\\n\");\n\n    // Register the interrupt handler\n    irq_disable(); // Disable interrupts globally\n    irq_set(0, interrupt_handler, NULL); // Set interrupt handler for IRQ 0\n    irq_enable(); // Enable interrupts globally\n\n    // Simulate some work\n    for (int i = 0; i < 10; i++) {\n        printf(\"Working... %d\\n\", i);\n        xtimer_sleep(1); // Sleep for 1 second\n\n        // Check if the interrupt has been triggered\n        if (atomic_var == 1) {\n            printf(\"Interrupt detected! Disabling and restoring interrupts...\\n\");\n\n            // Disable interrupts\n            irq_disable();\n            printf(\"Interrupts disabled. Atomic variable: %d\\n\", atomic_var);\n\n            // Simulate some work while interrupts are disabled\n            xtimer_sleep(2);\n\n            // Restore interrupts\n            irq_enable();\n            printf(\"Interrupts restored.\\n\");\n\n            // Reset atomic variable\n            atomic_var = 0;\n        }\n    }\n\n    printf(\"Interrupt handling test completed.\\n\");\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

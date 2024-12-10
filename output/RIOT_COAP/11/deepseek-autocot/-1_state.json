@@ -1,0 +1,18 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:23:28: error: implicit declaration of function 'coap_pkt_get_code_class'; did you mean 'coap_get_code_class'? [-Werror=implicit-function-declaration]",
+        "/root/RIOT/examples/LLM_Gen/main.c:30:28: error: 'SOCK_IPV6_EP_ANY' undeclared (first use in this function); did you mean 'SOCK_IPV4_EP_ANY'?",
+        "/root/RIOT/examples/LLM_Gen/main.c:34:56: error: 'union <anonymous>' has no member named 'ipv6'; did you mean 'ipv4'?"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32, which  sends a CoAP request to an COAP server. The program is configured to send CoAP POST requests \"Hello, COAP Cloud\" to the COAP server at IP address \"47.102.103.1\" and port 5683, with the URI path \"/coap/test\". "
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include \"net/gcoap.h\"\n#include \"net/ipv6/addr.h\"\n#include \"net/sock/udp.h\"\n#include \"xtimer.h\"\n\n#define SERVER_IP \"47.102.103.1\"\n#define SERVER_PORT 5683\n#define URI_PATH \"/coap/test\"\n#define MESSAGE \"Hello, COAP Cloud\"\n\nstatic void _resp_handler(const gcoap_request_memo_t *memo, coap_pkt_t *pdu, const sock_udp_ep_t *remote)\n{\n    if (memo->state == GCOAP_MEMO_TIMEOUT) {\n        puts(\"Request timed out\");\n    }\n    else if (memo->state == GCOAP_MEMO_ERR) {\n        puts(\"Request failed\");\n    }\n    else {\n        char *class_str = (coap_pkt_get_code_class(pdu) == COAP_CLASS_SUCCESS) ? \"Success\" : \"Error\";\n        printf(\"Response Code: %s\\n\", class_str);\n    }\n}\n\nint main(void)\n{\n    sock_udp_ep_t remote = SOCK_IPV6_EP_ANY;\n    remote.port = SERVER_PORT;\n    remote.family = AF_INET;\n\n    if (ipv6_addr_from_str((ipv6_addr_t *)&remote.addr.ipv6, SERVER_IP) == NULL) {\n        puts(\"Error: unable to parse destination address\");\n        return 1;\n    }\n\n    uint8_t buf[CONFIG_GCOAP_PDU_BUF_SIZE];\n    coap_pkt_t pdu;\n\n    gcoap_req_init(&pdu, buf, CONFIG_GCOAP_PDU_BUF_SIZE, COAP_METHOD_POST, URI_PATH);\n    coap_opt_add_format(&pdu, COAP_FORMAT_TEXT);\n    ssize_t len = coap_opt_finish(&pdu, COAP_OPT_FINISH_PAYLOAD);\n\n    memcpy(pdu.payload, MESSAGE, strlen(MESSAGE));\n    len += strlen(MESSAGE);\n\n    gcoap_req_send(&buf[0], len, &remote, _resp_handler, NULL, GCOAP_SOCKET_TYPE_UDP);\n\n    while (1) {\n        xtimer_sleep(1);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

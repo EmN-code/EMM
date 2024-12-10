@@ -1,0 +1,26 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32 that uses Non-Volatile Storage (NVS) to store a device state (\u201d1\u201d or \u201c0\u201d) persistently. This process repeats every second, ensuring the temperature is continuously updated in storage."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: [\"/root/RIOT/examples/LLM_Gen/main.c:31:11: error: implicit declaration of function 'nvs_flash_init' [-Werror=implicit-function-declaration]\", \"/root/RIOT/examples/LLM_Gen/main.c:35:25: error: implicit declaration of function 'nvs_flash_erase' [-Werror=implicit-function-declaration]\"] and Invoke the code tool to solve the error and structure the output with a prefix and code block. "
+        ],
+        [
+            "user",
+            "Your answer cannot contain the provided headers and apis from blacklist!): []"
+        ],
+        [
+            "user",
+            "Your answer must contain all the []!"
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <xtimer.h>\n#include <nvs.h>\n\n#define NVS_NAMESPACE \"storage\"\n#define DEVICE_STATE_KEY \"device_state\"\n\nint main(void)\n{\n    nvs_handle_t my_handle;\n    int err;\n    int device_state = 0;\n\n    // Initialize NVS\n    err = nvs_open(NVS_NAMESPACE, NVS_READWRITE, &my_handle);\n    if (err != NVS_OK) {\n        printf(\"NVS open failed: %d\\n\", err);\n        return 1;\n    }\n\n    while (1) {\n        // Toggle device state\n        device_state = (device_state == 0) ? 1 : 0;\n\n        // Store the device state in NVS\n        err = nvs_set_i32(my_handle, DEVICE_STATE_KEY, device_state);\n        if (err != NVS_OK) {\n            printf(\"NVS set failed: %d\\n\", err);\n            nvs_close(my_handle);\n            return 1;\n        }\n\n        // Commit the changes to NVS\n        err = nvs_commit(my_handle);\n        if (err != NVS_OK) {\n            printf(\"NVS commit failed: %d\\n\", err);\n            nvs_close(my_handle);\n            return 1;\n        }\n\n        printf(\"Device state updated to: %d\\n\", device_state);\n\n        // Wait for 1 second\n        xtimer_sleep(1);\n    }\n\n    // Close the NVS handle\n    nvs_close(my_handle);\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 2
+}

@@ -1,0 +1,14 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop Zephyr code on an ESP32 to achieve interrupt handling. The program uses atomic variables to verify if disabling and restoring interrupts works correctly. You should use irq but not use gpio interface. "
+        ]
+    ],
+    "generation": "\n#include <zephyr/kernel.h>\n#include <zephyr/sys/atomic.h>\n#include <zephyr/irq.h>\n#include <zephyr/init.h>\n#include <zephyr/device.h>\n#include <zephyr/toolchain.h>\n\n#define MY_IRQ 15  // Example IRQ number, adjust according to your ESP32 configuration\n\nstatic atomic_t interrupt_flag = ATOMIC_INIT(0);\n\nvoid my_isr(const void *arg)\n{\n    ARG_UNUSED(arg);\n\n    // Set the interrupt flag\n    atomic_set(&interrupt_flag, 1);\n}\n\nvoid configure_interrupt(void)\n{\n    // Configure the interrupt\n    irq_connect_dynamic(MY_IRQ, 0, my_isr, NULL, 0);\n    irq_enable(MY_IRQ);\n}\n\nint main(void)\n{\n    printk(\"Starting interrupt handling test on ESP32\\n\");\n\n    // Configure the interrupt\n    configure_interrupt();\n\n    // Disable interrupts\n    unsigned int key = irq_lock();\n\n    // Trigger the interrupt (this is a simulation, actual triggering depends on hardware)\n    // For example, if MY_IRQ is a timer interrupt, you might start a timer here\n\n    // Wait for a short period to allow the interrupt to potentially fire\n    k_sleep(K_MSEC(100));\n\n    // Check if the interrupt flag was set\n    if (atomic_get(&interrupt_flag) == 1) {\n        printk(\"Interrupt was handled while interrupts were disabled. Test failed.\\n\");\n    } else {\n        printk(\"Interrupt was not handled while interrupts were disabled. Test passed.\\n\");\n    }\n\n    // Restore interrupts\n    irq_unlock(key);\n\n    // Wait for a short period to allow the interrupt to potentially fire\n    k_sleep(K_MSEC(100));\n\n    // Check if the interrupt flag was set\n    if (atomic_get(&interrupt_flag) == 1) {\n        printk(\"Interrupt was handled after interrupts were restored. Test passed.\\n\");\n    } else {\n        printk(\"Interrupt was not handled after interrupts were restored. Test failed.\\n\");\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

@@ -1,0 +1,14 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop Zephyr code on an ESP32 to achieve interrupt handling. The program uses atomic variables to verify if disabling and restoring interrupts works correctly. You should use irq but not use gpio interface. "
+        ]
+    ],
+    "generation": "\n#include <zephyr/kernel.h>\n#include <zephyr/sys/atomic.h>\n#include <zephyr/irq.h>\n#include <zephyr/init.h>\n\n#define MY_IRQ 14  // Example IRQ number for ESP32\n\nstatic atomic_t interrupt_flag = ATOMIC_INIT(0);\n\nvoid my_isr(const void *arg)\n{\n    ARG_UNUSED(arg);\n\n    // Set the interrupt flag\n    atomic_set(&interrupt_flag, 1);\n}\n\nvoid test_interrupt_handling(void)\n{\n    // Disable interrupts\n    unsigned int key = irq_lock();\n\n    // Simulate some critical section code\n    k_sleep(K_MSEC(100));\n\n    // Verify that the interrupt flag is not set\n    if (atomic_get(&interrupt_flag) != 0) {\n        printk(\"Error: Interrupt flag set while interrupts were disabled\\n\");\n    } else {\n        printk(\"Interrupts disabled successfully\\n\");\n    }\n\n    // Restore interrupts\n    irq_unlock(key);\n\n    // Wait for the interrupt to occur\n    k_sleep(K_MSEC(100));\n\n    // Verify that the interrupt flag is set\n    if (atomic_get(&interrupt_flag) != 1) {\n        printk(\"Error: Interrupt flag not set after interrupts were restored\\n\");\n    } else {\n        printk(\"Interrupts restored successfully\\n\");\n    }\n}\n\nint main(void)\n{\n    // Initialize the interrupt\n    IRQ_CONNECT(MY_IRQ, 0, my_isr, NULL, 0);\n    irq_enable(MY_IRQ);\n\n    // Test the interrupt handling\n    test_interrupt_handling();\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

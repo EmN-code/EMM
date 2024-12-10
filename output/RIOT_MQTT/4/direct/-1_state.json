@@ -1,0 +1,20 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:4:10: fatal error: mqtt.h: No such file or directory"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to an MQTT broker at\u00a047.102.103.1:1883\u00a0to publish state (\u201dwork or not work\u201d) each five seconds."
+        ],
+        [
+            "assistant",
+            "prefix: To develop a RIOT program for the ESP32 that connects to an MQTT broker at IP address 47.102.103.1 on port 1883 and publishes the state ('work' or 'not work') every five seconds, we need to use the MQTT protocol. We'll use RIOT's MQTT client library and set up a UDP endpoint for the broker. Here's how the program works: \n\n1. Set up the broker's IP and port using the UDP socket endpoint structure.\n2. Define a callback function `on_pub()` to confirm when a message is published.\n3. Implement `publish_state()` which publishes the 'work' state every five seconds.\n4. In the `main()` function, configure the MQTT client and connect to the broker using the endpoint structure.\n5. Start the state publishing loop.\n\nHere's the complete implementation:  \n block: #include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n#include <mqtt.h>\n#include <net/af.h>\n#include <net/sock/udp.h>\n#include <net/emac.h>\n#include <xtimer.h>\n\n#define BROKER_IP \"47.102.103.1\"\n#define BROKER_PORT 1883\n#define PUBLISH_INTERVAL (5U * US_PER_SEC)\n#define MQTT_TOPIC \"device/state\"\n\nstatic mqtt_client_t mqtt_client;\nstatic sock_udp_ep_t broker_ep = { .family = AF_INET6, .port = BROKER_PORT };\nstatic char client_id[] = \"esp32_mqtt_client\";\n\nstatic void on_pub(void *arg, uint16_t pkt_id, const uint8_t *topic, size_t topic_len, const uint8_t *data, size_t data_len) {\n    (void)arg;\n    printf(\"Message with ID %d published successfully!\\n\", pkt_id);\n}\n\nvoid publish_state(void) {\n    static const char *state_msg = \"work\";\n    while (1) {\n        printf(\"Publishing state...\\n\");\n        mqtt_publish(&mqtt_client, MQTT_TOPIC, state_msg, strlen(state_msg), 0);\n        xtimer_sleep(PUBLISH_INTERVAL / US_PER_SEC);\n    }\n}\n\nint main(void) {\n    printf(\"Connecting to MQTT broker...\\n\");\n    broker_ep.netif = SOCK_ADDR_ANY_NETIF;\n    ipv6_addr_from_str((ipv6_addr_t *)&broker_ep.addr.ipv6, BROKER_IP);\n\n    mqtt_client.con_pkt_id = 1;\n    mqtt_client.last_mid = 1;\n\n    mqtt_connect(&mqtt_client, &broker_ep, client_id, true, NULL, NULL, 0, 0, on_pub);\n\n    publish_state();\n\n    return 0;\n} \n"
+        ]
+    ],
+    "generation": "#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n#include <mqtt.h>\n#include <net/af.h>\n#include <net/sock/udp.h>\n#include <net/emac.h>\n#include <xtimer.h>\n\n#define BROKER_IP \"47.102.103.1\"\n#define BROKER_PORT 1883\n#define PUBLISH_INTERVAL (5U * US_PER_SEC)\n#define MQTT_TOPIC \"device/state\"\n\nstatic mqtt_client_t mqtt_client;\nstatic sock_udp_ep_t broker_ep = { .family = AF_INET6, .port = BROKER_PORT };\nstatic char client_id[] = \"esp32_mqtt_client\";\n\nstatic void on_pub(void *arg, uint16_t pkt_id, const uint8_t *topic, size_t topic_len, const uint8_t *data, size_t data_len) {\n    (void)arg;\n    printf(\"Message with ID %d published successfully!\\n\", pkt_id);\n}\n\nvoid publish_state(void) {\n    static const char *state_msg = \"work\";\n    while (1) {\n        printf(\"Publishing state...\\n\");\n        mqtt_publish(&mqtt_client, MQTT_TOPIC, state_msg, strlen(state_msg), 0);\n        xtimer_sleep(PUBLISH_INTERVAL / US_PER_SEC);\n    }\n}\n\nint main(void) {\n    printf(\"Connecting to MQTT broker...\\n\");\n    broker_ep.netif = SOCK_ADDR_ANY_NETIF;\n    ipv6_addr_from_str((ipv6_addr_t *)&broker_ep.addr.ipv6, BROKER_IP);\n\n    mqtt_client.con_pkt_id = 1;\n    mqtt_client.last_mid = 1;\n\n    mqtt_connect(&mqtt_client, &broker_ep, client_id, true, NULL, NULL, 0, 0, on_pub);\n\n    publish_state();\n\n    return 0;\n}",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 6
+}

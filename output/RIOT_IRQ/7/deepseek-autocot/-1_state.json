@@ -1,0 +1,23 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:11:17: error: unknown type name 'atomic_t'",
+        "/root/RIOT/examples/LLM_Gen/main.c:11:43: error: implicit declaration of function 'ATOMIC_INIT' [-Werror=implicit-function-declaration]",
+        "/root/RIOT/examples/LLM_Gen/main.c:11:43: error: initializer element is not constant",
+        "/root/RIOT/examples/LLM_Gen/main.c:15:5: error: implicit declaration of function 'atomic_store'; did you mean 'atomic_store_u8'? [-Werror=implicit-function-declaration]",
+        "/root/RIOT/examples/LLM_Gen/main.c:23:13: error: implicit declaration of function 'atomic_load'; did you mean 'atomic_load_u8'? [-Werror=implicit-function-declaration]",
+        "/root/RIOT/examples/LLM_Gen/main.c:36:5: error: implicit declaration of function 'irq_set_handler' [-Werror=implicit-function-declaration]",
+        "/root/RIOT/examples/LLM_Gen/main.c:36:21: error: 'IRQ_NUM' undeclared (first use in this function); did you mean 'IRQ_H'?",
+        "/root/RIOT/examples/LLM_Gen/main.c:40:9: error: 'thread_stack' undeclared (first use in this function); did you mean 'thread_sleep'?"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32 to achieve interrupt handling. The program uses atomic variables to verify if disabling and restoring interrupts works correctly. You should use irq but not use gpio interface. "
+        ]
+    ],
+    "generation": "\n#include \"irq.h\"\n#include \"thread.h\"\n#include \"xtimer.h\"\n#include \"atomic_utils.h\"\n\n#define THREAD_STACKSIZE 512\n#define THREAD_PRIORITY (THREAD_PRIORITY_MAIN - 1)\n\nstatic kernel_pid_t thread_pid;\nstatic volatile atomic_t interrupt_flag = ATOMIC_INIT(0);\n\nvoid interrupt_handler(void)\n{\n    atomic_store(&interrupt_flag, 1);\n}\n\nvoid *interrupt_thread(void *arg)\n{\n    (void)arg;\n\n    while (1) {\n        if (atomic_load(&interrupt_flag) == 1) {\n            printf(\"Interrupt detected!\\n\");\n            atomic_store(&interrupt_flag, 0);\n        }\n        xtimer_sleep(1);\n    }\n\n    return NULL;\n}\n\nint main(void)\n{\n    // Initialize the interrupt handler\n    irq_set_handler(IRQ_NUM, interrupt_handler);\n\n    // Create a thread to handle the interrupt flag\n    thread_pid = thread_create(\n        thread_stack,\n        THREAD_STACKSIZE,\n        THREAD_PRIORITY,\n        THREAD_CREATE_STACKTEST,\n        interrupt_thread,\n        NULL,\n        \"interrupt_thread\"\n    );\n\n    // Main loop to simulate interrupt triggering\n    while (1) {\n        // Simulate an interrupt by setting the flag\n        unsigned state = irq_disable();\n        atomic_store(&interrupt_flag, 1);\n        irq_restore(state);\n\n        xtimer_sleep(5);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

@@ -1,0 +1,16 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:11:5: error: implicit declaration of function 'nvs_flash_init' [-Werror=implicit-function-declaration]"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32 that uses Non-Volatile Storage (NVS) to store a device state (\u201d1\u201d or \u201c0\u201d) persistently. This process repeats every second, ensuring the temperature is continuously updated in storage."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include <xtimer.h>\n#include <nvs.h>\n\n#define NVS_NAMESPACE \"device_state\"\n#define NVS_KEY \"temperature_state\"\n\nvoid store_temperature_state(int state) {\n    nvs_flash_init();\n    nvs_handle_t handle;\n    esp_err_t err = nvs_open(NVS_NAMESPACE, NVS_READWRITE, &handle);\n    if (err != ESP_OK) {\n        printf(\"Error (%s) opening NVS handle!\\n\", esp_err_to_name(err));\n    } else {\n        err = nvs_set_i32(handle, NVS_KEY, state);\n        if (err != ESP_OK) {\n            printf(\"Error (%s) storing temperature state!\\n\", esp_err_to_name(err));\n        } else {\n            err = nvs_commit(handle);\n            if (err != ESP_OK) {\n                printf(\"Error (%s) committing NVS handle!\\n\", esp_err_to_name(err));\n            } else {\n                printf(\"Temperature state stored: %d\\n\", state);\n            }\n        }\n        nvs_close(handle);\n    }\n}\n\nint main(void) {\n    int temperature_state = 1; // Initial state\n\n    while (1) {\n        // Simulate temperature state change\n        temperature_state = (temperature_state == 1) ? 0 : 1;\n\n        // Store the temperature state in NVS\n        store_temperature_state(temperature_state);\n\n        // Wait for 1 second before repeating\n        xtimer_sleep(1);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

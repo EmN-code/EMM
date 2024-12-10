@@ -1,0 +1,16 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:8:10: fatal error: net/conn/udp.h: No such file or directory"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to an MQTT-SN broker at\u00a047.102.103.1:1883\u00a0to publish state (\u201dwork or not work\u201d) every five seconds. To reduce energy, you must use emcute lib."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include <xtimer.h>\n#include \"net/emcute.h\"\n#include \"net/ipv6/addr.h\"\n#include \"net/af.h\"\n#include \"net/conn/udp.h\"\n#include \"net/sock/udp.h\"\n#include \"net/netif.h\"\n#include \"shell.h\"\n\n#define EMCUTE_PORT       1883\n#define EMCUTE_ADDR       \"47.102.103.1\"\n#define EMCUTE_TOPIC      \"device/state\"\n#define EMCUTE_QOS        0\n#define PUBLISH_INTERVAL  (5 * 1000000U)  /* 5 seconds in microseconds */\n\nstatic emcute_sub_t sub;\nstatic sock_udp_ep_t gw = { .family = AF_INET, .port = EMCUTE_PORT };\n\nstatic void on_pub(const emcute_topic_t *topic, void *data, size_t len)\n{\n    printf(\"Received message on topic '%s' [%i]: \", topic->name, (int)topic->id);\n    for (size_t i = 0; i < len; i++) {\n        printf(\"%c\", ((char *)data)[i]);\n    }\n    puts(\"\");\n}\n\nstatic void publish_state(void)\n{\n    static const char *states[] = {\"work\", \"not work\"};\n    static uint8_t state_index = 0;\n\n    emcute_topic_t t;\n    t.name = EMCUTE_TOPIC;\n    t.id = 0;  /* Topic ID will be assigned by the broker */\n\n    if (emcute_pub(&t, states[state_index], strlen(states[state_index]), EMCUTE_QOS) != EMCUTE_OK) {\n        puts(\"Error: unable to publish state\");\n    } else {\n        puts(\"State published successfully\");\n    }\n\n    state_index = (state_index + 1) % 2;  /* Toggle state */\n}\n\nint main(void)\n{\n    /* Initialize the network interface */\n    netif_t *netif = netif_iter(NULL);\n    if (!netif) {\n        puts(\"Error: no network interface found\");\n        return 1;\n    }\n\n    /* Set up the gateway endpoint */\n    if (ipv4_addr_from_str((ipv4_addr_t *)&gw.addr.ipv4, EMCUTE_ADDR) == NULL) {\n        puts(\"Error: unable to parse gateway address\");\n        return 1;\n    }\n\n    /* Initialize the EMCUTE thread */\n    emcute_run(netif, EMCUTE_PORT);\n\n    /* Connect to the MQTT-SN broker */\n    if (emcute_con(&gw, true, NULL, NULL, 0, 0) != EMCUTE_OK) {\n        puts(\"Error: unable to connect to MQTT-SN broker\");\n        return 1;\n    }\n    puts(\"Connected to MQTT-SN broker\");\n\n    /* Subscribe to the topic */\n    sub.cb = on_pub;\n    sub.topic.name = EMCUTE_TOPIC;\n    if (emcute_sub(&sub, EMCUTE_QOS) != EMCUTE_OK) {\n        puts(\"Error: unable to subscribe to topic\");\n        return 1;\n    }\n    puts(\"Subscribed to topic\");\n\n    /* Publish state every 5 seconds */\n    while (1) {\n        publish_state();\n        xtimer_usleep(PUBLISH_INTERVAL);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

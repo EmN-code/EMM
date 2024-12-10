@@ -1,0 +1,22 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:46:9: error: implicit declaration of function 'net_init' [-Werror=implicit-function-declaration]",
+        "/root/RIOT/examples/LLM_Gen/main.c:53:9: error: implicit declaration of function 'inet_pton' [-Werror=implicit-function-declaration]",
+        "/root/RIOT/examples/LLM_Gen/main.c:14:21: error: 'sub' defined but not used [-Werror=unused-variable]"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to an MQTT-SN broker at\u00a047.102.103.1:1883\u00a0to publish state (\u201dwork or not work\u201d) every five seconds. To reduce energy, you must use emcute lib."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: [\"/root/RIOT/examples/LLM_Gen/main.c:35:9: error: implicit declaration of function 'net_init' [-Werror=implicit-function-declaration]\", \"/root/RIOT/examples/LLM_Gen/main.c:41:9: error: implicit declaration of function 'inet_pton' [-Werror=implicit-function-declaration]\"] and Invoke the code tool to solve the error and structure the output with a prefix and code block. "
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include <xtimer.h>\n#include <net/sock/udp.h>\n#include <net/ipv4/addr.h>\n#include <net/emcute.h>\n\n#define SERVER_IP \"47.102.103.1\"\n#define SERVER_PORT 1883\n#define TOPIC_NAME \"state\"\n#define CLIENT_ID \"esp32_client\"\n\nstatic emcute_sub_t sub;\nstatic sock_udp_ep_t gw = SOCK_IPV4_EP_ANY;\n\nvoid publish_state(void) {\n    static const char *states[] = {\"work\", \"not work\"};\n    static uint8_t state_index = 0;\n\n    emcute_topic_t topic;\n    topic.name = TOPIC_NAME;\n    topic.id = 0; // Topic ID will be assigned by the gateway\n\n    // Register the topic if not already registered\n    if (topic.id == 0) {\n        if (emcute_reg(&topic) != EMCUTE_OK) {\n            puts(\"Error: unable to register topic\");\n            return;\n        }\n    }\n\n    // Publish the state\n    if (emcute_pub(&topic, states[state_index], strlen(states[state_index]), 0) != EMCUTE_OK) {\n        puts(\"Error: unable to publish state\");\n    } else {\n        puts(\"State published\");\n    }\n\n    // Toggle state\n    state_index = 1 - state_index;\n}\n\nint main(void) {\n    // Initialize the network stack\n    if (net_init() < 0) {\n        puts(\"Error: unable to initialize network stack\");\n        return 1;\n    }\n\n    // Set up the gateway endpoint\n    gw.port = SERVER_PORT;\n    if (inet_pton(AF_INET, SERVER_IP, &gw.addr.ipv4) <= 0) {\n        puts(\"Error: unable to parse server IP address\");\n        return 1;\n    }\n\n    // Connect to the MQTT-SN gateway\n    if (emcute_con(&gw, true, NULL, NULL, 0, 0) != EMCUTE_OK) {\n        puts(\"Error: unable to connect to MQTT-SN gateway\");\n        return 1;\n    }\n\n    // Run the emCute thread\n    emcute_run(SERVER_PORT, CLIENT_ID);\n\n    // Publish state every 5 seconds\n    while (1) {\n        publish_state();\n        xtimer_sleep(5);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 11
+}

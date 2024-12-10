@@ -1,0 +1,18 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32. It read dht11 each five seconds. The dht11 connects to gpio 2."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: [\"/root/RIOT/examples/LLM_Gen/main.c:30:20: error: 'DHT_PARAM_PULL' undeclared (first use in this function)\"] and Invoke the code tool to solve the error and structure the output with a prefix and code block. "
+        ]
+    ],
+    "generation": "\n#include \"xtimer.h\"\n#include \"periph/gpio.h\"\n#include \"dht.h\"\n\n#define DHT_PIN             GPIO_PIN(0, 2)\n#define DHT_TYPE            DHT11\n#define SLEEP_INTERVAL      (5 * 1000000U)  /* 5 seconds */\n\nstatic dht_t dht_dev;\n\nint main(void)\n{\n    int16_t temp, hum;\n\n    /* Initialize the DHT11 sensor */\n    dht_params_t dht_params = {\n        .pin = DHT_PIN,\n        .type = DHT_TYPE,\n        .in_mode = GPIO_IN_PU  /* Use GPIO_IN_PU instead of DHT_PARAM_PULL */\n    };\n\n    if (dht_init(&dht_dev, &dht_params) == DHT_OK) {\n        while (1) {\n            if (dht_read(&dht_dev, &temp, &hum) == DHT_OK) {\n                printf(\"Temperature: %d.%d\u00b0C, Humidity: %d.%d%%\\n\",\n                       (int)temp / 10, (int)temp % 10,\n                       (int)hum / 10, (int)hum % 10);\n            } else {\n                puts(\"Failed to read from DHT sensor\");\n            }\n\n            xtimer_usleep(SLEEP_INTERVAL);\n        }\n    } else {\n        puts(\"Failed to initialize DHT sensor\");\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 4
+}

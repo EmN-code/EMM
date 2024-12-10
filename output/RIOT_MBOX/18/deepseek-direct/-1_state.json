@@ -1,0 +1,14 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32 to achieve message box functionality. The program sets up a message box, sending events at intervals."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <thread.h>\n#include <xtimer.h>\n#include <msg.h>\n\n#define MSG_QUEUE_SIZE 10\n#define INTERVAL_MS 1000000  // 1 second in microseconds\n\nstatic msg_t msg_queue[MSG_QUEUE_SIZE];\nstatic char stack[THREAD_STACKSIZE_DEFAULT];\n\nvoid *event_sender(void *arg)\n{\n    (void)arg;\n    msg_t msg;\n    msg_init_queue(msg_queue, MSG_QUEUE_SIZE);\n\n    while (1) {\n        // Send a message to the main thread\n        msg.content.value = 1;  // Dummy value\n        msg_send(&msg, thread_getpid());\n\n        // Wait for the interval\n        xtimer_usleep(INTERVAL_MS);\n    }\n\n    return NULL;\n}\n\nint main(void)\n{\n    puts(\"Message Box Example\");\n\n    // Create the event sender thread\n    thread_create(stack, sizeof(stack), THREAD_PRIORITY_MAIN - 1, 0, event_sender, NULL, \"event_sender\");\n\n    msg_t msg;\n    while (1) {\n        // Wait for a message from the event sender\n        msg_receive(&msg);\n\n        // Process the message\n        printf(\"Received event at %\" PRIu32 \"\\n\", xtimer_now_usec());\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

@@ -1,0 +1,20 @@
+{
+    "error": [
+        "hello-world.c:4:10: fatal error: net/mqtt.h: No such file or directory"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a Contiki program for the NRF52840 that connects to an MQTT broker at 47.102.103.1:1883 to publish state (\u201dwork or not work\u201d) each five seconds."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: ['hello-world.c:4:10: fatal error: net/mqtt.h: No such file or directory'] and Invoke the code tool to solve the error and structure the output with a prefix and code block."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include \"net/mqtt.h\"\n#include \"xtimer.h\"\n\n#define BROKER_IP \"47.102.103.1\"\n#define BROKER_PORT 1883\n#define TOPIC \"state\"\n#define PAYLOAD \"work\"\n#define PAYLOAD_SIZE 4\n#define INTERVAL 5\n\nstatic struct mqtt_connection conn;\n\nvoid publish_state(void) {\n    uint16_t mid;\n    mqtt_status_t status = mqtt_publish(&conn, &mid, TOPIC, (uint8_t *)PAYLOAD, PAYLOAD_SIZE, MQTT_QOS_0, MQTT_RETAIN_FALSE, 0, MQTT_TOPIC_ALIAS_EN_FALSE, NULL);\n    if (status != MQTT_STATUS_SUCCESS) {\n        printf(\"Failed to publish state\\n\");\n    }\n}\n\nint main(void) {\n    mqtt_status_t status;\n\n    // Initialize MQTT connection\n    status = mqtt_register(&conn, NULL, \"nrf52840_client\", NULL, 128);\n    if (status != MQTT_STATUS_SUCCESS) {\n        printf(\"Failed to register MQTT connection\\n\");\n        return 1;\n    }\n\n    // Connect to MQTT broker\n    status = mqtt_connect(&conn, BROKER_IP, BROKER_PORT, 60, MQTT_CLEAN_SESSION_TRUE, NULL);\n    if (status != MQTT_STATUS_SUCCESS) {\n        printf(\"Failed to connect to MQTT broker\\n\");\n        return 1;\n    }\n\n    while (1) {\n        publish_state();\n        xtimer_sleep(INTERVAL);\n    }\n\n    // Disconnect from MQTT broker\n    mqtt_disconnect(&conn);\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 11
+}

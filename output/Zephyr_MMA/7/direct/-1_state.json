@@ -1,0 +1,18 @@
+{
+    "error": [
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:16:31: error: array type has incomplete element type 'struct flash_sector_param'",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:19:44: error: 'storage_partition' undeclared (first use in this function); did you mean 'rtio_partition'?",
+        "E:/local_code/IoT/zephyrproject/zephyr/include/zephyr/device.h:92:41: error: '__device_dts_ord_DT_N_ALIAS_mma8x5x_ORD' undeclared (first use in this function)"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop Zephyr code on an ESP32. It read MMA8x5x every 5 seconds and uses NVS to store the reading value persistently. "
+        ]
+    ],
+    "generation": "\n#include <zephyr/kernel.h>\n#include <zephyr/device.h>\n#include <zephyr/drivers/sensor.h>\n#include <zephyr/storage/flash_map.h>\n#include <zephyr/fs/nvs.h>\n#include <zephyr/sys/printk.h>\n\n#define MMA8X5X_NODE DT_ALIAS(mma8x5x)\n#define NVS_PARTITION_ID FIXED_PARTITION_ID(storage_partition)\n\nstatic struct nvs_fs fs;\n\nvoid init_nvs(void) {\n    int err;\n    struct flash_sector_param sectors[1];\n\n    sectors[0].fs_size = 4096; // Example size, adjust as needed\n    sectors[0].fs_addr = FLASH_AREA_OFFSET(storage_partition);\n\n    fs.sector_size = sectors[0].fs_size;\n    fs.sector_count = 1;\n    fs.offset = sectors[0].fs_addr;\n\n    err = nvs_init(&fs, \"storage\");\n    if (err) {\n        printk(\"NVS init failed: %d\\n\", err);\n    } else {\n        printk(\"NVS init successful\\n\");\n    }\n}\n\nvoid store_reading(int32_t reading) {\n    int err;\n    err = nvs_write(&fs, 1, &reading, sizeof(reading));\n    if (err < 0) {\n        printk(\"NVS write failed: %d\\n\", err);\n    } else {\n        printk(\"NVS write successful\\n\");\n    }\n}\n\nvoid read_sensor(const struct device *dev) {\n    struct sensor_value accel[3];\n    int32_t reading;\n\n    if (sensor_sample_fetch(dev) < 0) {\n        printk(\"Sensor sample update failed\\n\");\n        return;\n    }\n\n    if (sensor_channel_get(dev, SENSOR_CHAN_ACCEL_XYZ, accel) < 0) {\n        printk(\"Failed to get sensor data\\n\");\n        return;\n    }\n\n    reading = (accel[0].val1 << 16) | (accel[1].val1 << 8) | accel[2].val1;\n    printk(\"Acceleration: X=%d, Y=%d, Z=%d\\n\", accel[0].val1, accel[1].val1, accel[2].val1);\n\n    store_reading(reading);\n}\n\nint main(void) {\n    const struct device *dev;\n\n    dev = DEVICE_DT_GET(MMA8X5X_NODE);\n    if (!device_is_ready(dev)) {\n        printk(\"Sensor device not ready\\n\");\n        return 0;\n    }\n\n    init_nvs();\n\n    while (1) {\n        read_sensor(dev);\n        k_sleep(K_SECONDS(5));\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

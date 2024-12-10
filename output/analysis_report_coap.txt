@@ -1,0 +1,40 @@
+### Pattern Analysis:
+
+**curr_FSMs pattern:**
+1. INIT -> SETUP_REMOTE ->
+   - On success: SEND_REQUEST
+   - On failure of CoAP request: RETRY_SEND (with retry mechanism)
+     - On success: WAIT_FOR_RESPONSE
+     - On failure: HANDLE_ERROR
+2. WAIT_FOR_RESPONSE ->
+   - On success: PROCESS_RESPONSE
+   - On failure: HANDLE_ERROR
+
+**ref_FSMs pattern (extracted from similarities with curr_FSMs):**
+1. START -> NETWORK_SETUP ->
+   - On success: MQTT_CLIENT_SETUP
+   - On failure: HANDLE ERROR
+   - Reconnects on specific transition
+2. CONNECT_MQTT ->
+   - On success: PUBLISH
+   - On failure: CONNECT_MQTT_RETRY (with retry mechanism)
+
+### Discrepancies & Corrective Measures:
+
+1. **Error Handling Mechanism:**
+   - **Discrepancy:** In curr_FSMs, the retry mechanism from SEND_REQUEST lacks a specific condition for how many times to retry before transitioning to HANDLE_ERROR. This is critical for robustness.
+   - **Correction:** Define a max retry count and implement logic to prevent endless retrying. Add a transition that monitors a count and directs to HANDLE_ERROR after a certain number of attempts.
+
+2. **Logical Transition After Failure:**
+   - **Discrepancy:** Upon failure in SEND_REQUEST, the curr_FSMs lacks an adequate differentiation between types of errors (recoverable vs. fatal) which may impact the retry mechanism effectively.
+   - **Correction:** Implement a decision node within HANDLE_ERROR to classify error types effectively, facilitating more controlled retries vs. transitioning to an error state.
+
+3. **Error State Definition:**
+   - **Discrepancy:** The ref_FSMs transition allows a network retry pattern that is absent in curr_FSMs during initialization or setup failures.
+   - **Correction:** Consider adding logic similar to NETWORK_SETUP and CONNECT_MQTT_RETRY in ref_FSMs to manage reconnection aspects during the initialization stages in curr_FSMs to enhance robustness when facing initialization issues.
+
+4. **Response Handler Outcomes:**
+   - **Discrepancy:** The curr_FSMs does not seem to handle different types of responses from _response_handler function (e.g., unexpected responses).
+   - **Correction:** Implement additional branches from the WAIT_FOR_RESPONSE state to handle unexpected or invalid responses appropriately, not just based on success and failure.
+
+Implementing these corrections can align the curr_FSMs more closely with robust mechanisms found in the ref_FSMs, which focus heavily on retry logic and precise failure management.

@@ -1,0 +1,16 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:6:10: fatal error: net/mqtt.h: No such file or directory"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to an MQTT broker at\u00a047.102.103.1:1883\u00a0to publish state (\u201dwork or not work\u201d) each five seconds. Do not use emcute lib."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include <xtimer.h>\n#include <net/sock.h>\n#include <net/mqtt.h>\n\n#define BROKER_IP \"47.102.103.1\"\n#define BROKER_PORT 1883\n#define TOPIC \"state\"\n#define PAYLOAD \"work\"\n#define INTERVAL (5 * 1000000U)  // 5 seconds in microseconds\n\nstatic sock_udp_t sock;\nstatic mqtt_client_t client;\nstatic char sendbuf[128];\nstatic char readbuf[128];\n\nvoid mqtt_connect(void) {\n    mqtt_client_init(&client);\n    mqtt_network_t network;\n    network.socket = &sock;\n    network.connect = (mqtt_network_connect_t)sock_udp_create;\n    network.disconnect = (mqtt_network_disconnect_t)sock_udp_disconnect;\n    network.send = (mqtt_network_send_t)sock_udp_send;\n    network.recv = (mqtt_network_recv_t)sock_udp_recv;\n\n    mqtt_connect_info_t conn_info = {\n        .client_id = \"riot_esp32\",\n        .username = NULL,\n        .password = NULL,\n        .keep_alive = 60,\n        .clean_session = 1,\n        .will_topic = NULL,\n        .will_message = NULL,\n        .will_qos = 0,\n        .will_retain = 0\n    };\n\n    mqtt_client_connect(&client, &network, &conn_info, sendbuf, sizeof(sendbuf), readbuf, sizeof(readbuf));\n}\n\nvoid mqtt_publish(void) {\n    mqtt_publish_info_t pub_info = {\n        .topic = TOPIC,\n        .payload = PAYLOAD,\n        .payload_len = strlen(PAYLOAD),\n        .qos = 0,\n        .retain = 0\n    };\n\n    mqtt_client_publish(&client, &pub_info, sendbuf, sizeof(sendbuf), readbuf, sizeof(readbuf));\n}\n\nint main(void) {\n    sock_udp_ep_t local = SOCK_IPV4_EP_ANY;\n    sock_udp_ep_t remote = { .family = AF_INET, .port = BROKER_PORT };\n    inet_pton(AF_INET, BROKER_IP, &remote.addr.ipv4);\n\n    sock_udp_create(&sock, &local, &remote, 0);\n\n    mqtt_connect();\n\n    while (1) {\n        mqtt_publish();\n        xtimer_usleep(INTERVAL);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

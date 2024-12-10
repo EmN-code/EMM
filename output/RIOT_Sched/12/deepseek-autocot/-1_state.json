@@ -1,0 +1,21 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:7: error: \"THREAD_STACKSIZE_MAIN\" redefined [-Werror]",
+        "/root/RIOT/examples/LLM_Gen/main.c:36:5: error: implicit declaration of function 'log_init'; did you mean '_lock_init'? [-Werror=implicit-function-declaration]",
+        "/root/RIOT/examples/LLM_Gen/main.c:40:9: error: implicit declaration of function 'thread_stack'; did you mean 'thread_sleep'? [-Werror=implicit-function-declaration]",
+        "/root/RIOT/examples/LLM_Gen/main.c:40:22: error: 'high_stack' undeclared (first use in this function)",
+        "/root/RIOT/examples/LLM_Gen/main.c:51:22: error: 'low_stack' undeclared (first use in this function)",
+        "/root/RIOT/examples/LLM_Gen/main.c:61:5: error: implicit declaration of function 'thread_change_priority'; did you mean 'sched_change_priority'? [-Werror=implicit-function-declaration]"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32. It starts two threads and change priority at runtime."
+        ]
+    ],
+    "generation": "\n#include \"thread.h\"\n#include \"xtimer.h\"\n#include \"periph/gpio.h\"\n#include \"log.h\"\n\n#define THREAD_STACKSIZE_MAIN   (THREAD_STACKSIZE_DEFAULT)\n#define THREAD_PRIORITY_HIGH    (THREAD_PRIORITY_MAIN - 1)\n#define THREAD_PRIORITY_LOW     (THREAD_PRIORITY_MAIN + 1)\n\nkernel_pid_t pid_high, pid_low;\n\nvoid *thread_high(void *arg)\n{\n    (void)arg;\n    while (1) {\n        LOG_INFO(\"High priority thread running\\n\");\n        xtimer_sleep(2);\n    }\n    return NULL;\n}\n\nvoid *thread_low(void *arg)\n{\n    (void)arg;\n    while (1) {\n        LOG_INFO(\"Low priority thread running\\n\");\n        xtimer_sleep(2);\n    }\n    return NULL;\n}\n\nint main(void)\n{\n    // Initialize logging\n    log_init();\n\n    // Create high priority thread\n    pid_high = thread_create(\n        thread_stack(high_stack),\n        THREAD_STACKSIZE_MAIN,\n        THREAD_PRIORITY_HIGH,\n        THREAD_CREATE_STACKTEST,\n        thread_high,\n        NULL,\n        \"high_thread\"\n    );\n\n    // Create low priority thread\n    pid_low = thread_create(\n        thread_stack(low_stack),\n        THREAD_STACKSIZE_MAIN,\n        THREAD_PRIORITY_LOW,\n        THREAD_CREATE_STACKTEST,\n        thread_low,\n        NULL,\n        \"low_thread\"\n    );\n\n    // Change priority of low priority thread to high at runtime\n    thread_change_priority(pid_low, THREAD_PRIORITY_HIGH);\n\n    // Main thread will yield to allow other threads to run\n    while (1) {\n        thread_yield();\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

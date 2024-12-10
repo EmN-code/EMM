@@ -1,0 +1,28 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:23: error: \"THREAD_STACKSIZE_DEFAULT\" redefined [-Werror]"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32. It starts two threads and change priority at runtime."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: ['/root/RIOT/examples/LLM_Gen/main.c:6: error: \"THREAD_STACKSIZE_DEFAULT\" redefined [-Werror]'] and Invoke the code tool to solve the error and structure the output with a prefix and code block. "
+        ],
+        [
+            "user",
+            "Your answer cannot contain the provided headers and apis from blacklist!): ['stdio.h', 'thread.h', 'xtimer.h', 'void *thread1_func(void *arg)', 'void *thread2_func(void *arg)', 'int main(void)', 'kernel_pid_t thread_create(char *stack, int stacksize, uint8_t priority, int flags, thread_task_func_t task_func, void *arg, const char *name)', 'void thread_change_priority(kernel_pid_t thread, uint8_t priority)', 'uint8_t thread_get_priority(kernel_pid_t thread)', 'kernel_pid_t thread_get_active(void)', 'void xtimer_sleep(uint32_t seconds)', 'evtimer_msg.h', 'timex.h', 'ztimer.h', 'event/thread.h', 'evtimer_mbox.h', 'time_units.h', 'ztimer_sleep', 'sched.h', 'assert.h', 'mma8x5x_params.h', 'event/periodic_callback.h', 'dht_params.h', 'mbox.h', 'net/sock/udp.h', 'string.h', 'architecture.h', 'mma8x5x_regs.h', 'periph/i2c.h', 'mma8x5x.h', 'net/emcute.h', 'periph/rtc.h', 'freertos/FreeRTOS.h', 'kernel_defines.h', 'periph/gpio.h', 'sys/socket.h', 'net/gcoap.h', 'mutex.h', 'freertos/task.h', 'netinet/in.h', 'net/sock/util.h', 'thread_get_priority', 'xtimer_sleep']"
+        ],
+        [
+            "user",
+            "Your answer must contain all the ['mbox.h', 'evtimer_msg.h', 'net/sock/udp.h', 'timex.h', 'unistd.h', 'string.h', 'architecture.h', 'mma8x5x_params.h', 'MQTTClient.h', 'dht_params.h', 'net/sock/util.h', 'xtimer.h', 'mma8x5x_regs.h', 'thread.h', 'periph/i2c.h', 'paho_mqtt.h', 'event/thread.h', 'ztimer.h', 'mma8x5x.h', 'net/emcute.h', 'evtimer_mbox.h', 'periph/rtc.h', 'freertos/FreeRTOS.h', 'kernel_defines.h', 'shell.h', 'periph/gpio.h', 'stdio.h', 'stdlib.h', 'time_units.h', 'nvs_flash.h', 'stdbool.h', 'esp_system.h', 'sys/socket.h', 'arpa/inet.h', 'dht.h', 'esp_wifi.h', 'sched.h', 'net/gcoap.h', 'mutex.h', 'msg.h', 'event/periodic_callback.h', 'netinet/in.h', 'freertos/task.h', 'nvs.h', 'assert.h', 'stdatomic.h', 'stddef.h']!"
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <stdlib.h>\n#include <unistd.h>\n#include <string.h>\n#include <stdbool.h>\n#include <esp_system.h>\n#include <nvs_flash.h>\n#include <nvs.h>\n#include <esp_wifi.h>\n#include <arpa/inet.h>\n#include <netinet/in.h>\n#include <sys/socket.h>\n#include <shell.h>\n#include <msg.h>\n#include <thread.h>\n#include <xtimer.h>\n#include <sched.h>\n#include <assert.h>\n#include <stdatomic.h>\n#include <stddef.h>\n\n#define THREAD_STACKSIZE_DEFAULT 512\n\nvoid *thread1_func(void *arg) {\n    (void)arg;\n    printf(\"Thread 1 is running\\n\");\n    return NULL;\n}\n\nvoid *thread2_func(void *arg) {\n    (void)arg;\n    printf(\"Thread 2 is running\\n\");\n    return NULL;\n}\n\nint main(void) {\n    nvs_flash_init();\n    esp_wifi_start();\n\n    char stack1[THREAD_STACKSIZE_DEFAULT];\n    char stack2[THREAD_STACKSIZE_DEFAULT];\n\n    kernel_pid_t pid1 = thread_create(stack1, sizeof(stack1), THREAD_PRIORITY_MAIN - 1, 0, thread1_func, NULL, \"thread1\");\n    kernel_pid_t pid2 = thread_create(stack2, sizeof(stack2), THREAD_PRIORITY_MAIN - 2, 0, thread2_func, NULL, \"thread2\");\n\n    xtimer_sleep(2);\n\n    printf(\"Changing priority of thread 1 to higher\\n\");\n    sched_change_priority(thread_get_unchecked(pid1), THREAD_PRIORITY_MAIN - 2);\n\n    xtimer_sleep(2);\n\n    printf(\"Changing priority of thread 2 to higher\\n\");\n    sched_change_priority(thread_get_unchecked(pid2), THREAD_PRIORITY_MAIN - 1);\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 11
+}

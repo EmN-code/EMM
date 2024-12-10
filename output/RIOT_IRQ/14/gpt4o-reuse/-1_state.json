@@ -1,0 +1,27 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:23:5: error: too many arguments to function 'irq_disable'",
+        "/root/RIOT/examples/LLM_Gen/main.c:24:5: error: implicit declaration of function 'irq_set_handler'; did you mean 'irq_handler'? [-Werror=implicit-function-declaration]",
+        "/root/RIOT/examples/LLM_Gen/main.c:25:5: error: too many arguments to function 'irq_enable'",
+        "/root/RIOT/examples/LLM_Gen/main.c:37:5: error: too many arguments to function 'irq_disable'"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32 to achieve interrupt handling. The program uses atomic variables to verify if disabling and restoring interrupts works correctly. You should use irq but not use gpio interface. "
+        ],
+        [
+            "user",
+            "#include <linux/interrupt.h>\n#include <linux/module.h>\nMODULE_LICENSE(\"GPL\");\nstatic int irq=11;    \nstatic irqreturn_t irq_handler(int data, void *dev_id)\n{\n    printk(\"the data is :%d\\n\", data);      \n    printk(\"in the interrupt handler function\\n\");\n    return IRQ_NONE;\n}\nstatic int __init enable_disable_irq_init(void)\n{\n    int result=0;\n    printk(\"into enable_disable_irq_init\\n\");\n    result=request_irq(irq, irq_handler, IRQF_DISABLED, \"A_New_Device\", NULL);\n    disable_irq(irq);\n    enable_irq(irq); \n    printk(\"the result of the request_irq is: %d\\n\", result);    \n    printk(\"out enable_disable_irq_init\\n\");\n    return 0;\n}\nstatic void __exit enable_disable_irq_exit(void)\n{\n    free_irq(irq, NULL);    \n    printk(\"Goodbye enable_disable_irq\\n\");\n    return;\n}\n"
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: [\"/root/RIOT/examples/LLM_Gen/main.c:23:5: error: implicit declaration of function 'irq_set_handler'; did you mean 'irq_handler'? [-Werror=implicit-function-declaration]\"] and Invoke the code tool to solve the error and structure the output with a prefix and code block. "
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <irq.h>\n#include <thread.h>\n#include <xtimer.h>\n\n#define IRQ_LINE 11\n\nvolatile int interrupt_occurred = 0;\n\nvoid irq_handler(void *arg)\n{\n    (void)arg;\n    interrupt_occurred = 1;\n    printf(\"Interrupt occurred\\n\");\n}\n\nint main(void)\n{\n    printf(\"Starting interrupt handling test\\n\");\n\n    // Register the interrupt handler\n    irq_disable(IRQ_LINE);\n    irq_set_handler(IRQ_LINE, irq_handler, NULL);\n    irq_enable(IRQ_LINE);\n\n    // Simulate some work\n    for (int i = 0; i < 10; i++) {\n        xtimer_sleep(1);\n        if (interrupt_occurred) {\n            printf(\"Interrupt was handled correctly\\n\");\n            interrupt_occurred = 0; // Reset the flag\n        }\n    }\n\n    // Disable the interrupt\n    irq_disable(IRQ_LINE);\n    printf(\"Interrupt handling test completed\\n\");\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 11
+}

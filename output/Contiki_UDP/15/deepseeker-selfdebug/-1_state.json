@@ -1,0 +1,20 @@
+{
+    "error": [
+        "hello-world.c:3:10: fatal error: xtimer.h: No such file or directory"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a Contiki program for the NRF52840 that connects to a UDP server at `47.102.103.1:20001` to send device state (\u201dwork or not work\u201d) by UDP method every five seconds."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: ['hello-world.c:3:10: fatal error: xtimer.h: No such file or directory'] and Invoke the code tool to solve the error and structure the output with a prefix and code block."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <xtimer.h>\n#include <net/ipv6/udp-socket.h>\n\n#define UDP_SERVER_IP \"47.102.103.1\"\n#define UDP_SERVER_PORT 20001\n#define DEVICE_STATE_WORK \"work\"\n#define DEVICE_STATE_NOT_WORK \"not work\"\n#define SEND_INTERVAL (5 * 1000 * 1000U) // 5 seconds in microseconds\n\nstatic char device_state[10];\n\nstatic void udp_send_state(void) {\n    static udp_socket_t sock;\n    static uint8_t buf[10];\n    int res;\n\n    udp_socket_create(&sock, NULL, NULL, 0);\n\n    if (strcmp(device_state, DEVICE_STATE_WORK) == 0) {\n        strcpy((char *)buf, DEVICE_STATE_WORK);\n    } else {\n        strcpy((char *)buf, DEVICE_STATE_NOT_WORK);\n    }\n\n    res = udp_send(&sock, buf, strlen((char *)buf), UDP_SERVER_IP, UDP_SERVER_PORT);\n    if (res < 0) {\n        printf(\"Failed to send UDP packet\\n\");\n    } else {\n        printf(\"Sent device state: %s\\n\", buf);\n    }\n\n    udp_socket_close(&sock);\n}\n\nint main(void) {\n    strcpy(device_state, DEVICE_STATE_WORK); // Initial state\n\n    while (1) {\n        udp_send_state();\n        xtimer_usleep(SEND_INTERVAL);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 11
+}

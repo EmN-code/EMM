@@ -1,0 +1,16 @@
+{
+    "error": [
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:2:10: fatal error: zephyr.h: No such file or directory\r"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a Zephyr program for the ESP32 that connects to an MQTT broker at 47.102.103.1:1883 to publish state (\u201dwork or not work\u201d) each five seconds. Do not use emcute lib."
+        ]
+    ],
+    "generation": "\n#include <zephyr.h>\n#include <net/socket.h>\n#include <net/mqtt.h>\n#include <logging/log.h>\n#include <string.h>\n\n#define MQTT_BROKER_ADDR \"47.102.103.1\"\n#define MQTT_BROKER_PORT 1883\n#define MQTT_TOPIC \"device/state\"\n#define MQTT_CLIENT_ID \"esp32_client\"\n#define MQTT_USERNAME NULL\n#define MQTT_PASSWORD NULL\n\n#define SLEEP_TIME_MS   5000\n\nLOG_MODULE_REGISTER(main);\n\nstatic int mqtt_connect(struct mqtt_client *client)\n{\n    int rc;\n    struct sockaddr_storage broker;\n\n    broker.sa_family = AF_INET;\n    ((struct sockaddr_in *)&broker)->sin_addr.s_addr = htonl(0x2F666767); // 47.102.103.1\n    ((struct sockaddr_in *)&broker)->sin_port = htons(MQTT_BROKER_PORT);\n\n    rc = mqtt_client_connect(client, (struct sockaddr *)&broker, NULL);\n    if (rc) {\n        LOG_ERR(\"Failed to connect to MQTT broker, error: %d\", rc);\n    }\n\n    return rc;\n}\n\nstatic int mqtt_publish(struct mqtt_client *client, const char *topic, const char *payload)\n{\n    int rc;\n    struct mqtt_publish_param param;\n\n    param.message.topic.qos = MQTT_QOS_0_AT_MOST_ONCE;\n    param.message.topic.topic.utf8 = topic;\n    param.message.topic.topic.size = strlen(topic);\n    param.message.payload.data = payload;\n    param.message.payload.len = strlen(payload);\n    param.message_id = 0;\n    param.dup_flag = 0;\n    param.retain_flag = 0;\n\n    rc = mqtt_publish(client, &param);\n    if (rc) {\n        LOG_ERR(\"Failed to publish message, error: %d\", rc);\n    }\n\n    return rc;\n}\n\nvoid main(void)\n{\n    struct mqtt_client client;\n    struct mqtt_client_config config;\n    struct mqtt_client_buf buf;\n    char payload[20];\n\n    memset(&client, 0, sizeof(client));\n    memset(&config, 0, sizeof(config));\n    memset(&buf, 0, sizeof(buf));\n\n    config.client_id.utf8 = MQTT_CLIENT_ID;\n    config.client_id.size = strlen(MQTT_CLIENT_ID);\n    config.user_name.utf8 = MQTT_USERNAME;\n    config.user_name.size = MQTT_USERNAME ? strlen(MQTT_USERNAME) : 0;\n    config.password.utf8 = MQTT_PASSWORD;\n    config.password.size = MQTT_PASSWORD ? strlen(MQTT_PASSWORD) : 0;\n\n    mqtt_client_init(&client, &config, &buf);\n\n    if (mqtt_connect(&client) == 0) {\n        while (1) {\n            snprintf(payload, sizeof(payload), \"work\");\n            mqtt_publish(&client, MQTT_TOPIC, payload);\n            k_sleep(K_MSEC(SLEEP_TIME_MS));\n\n            snprintf(payload, sizeof(payload), \"not work\");\n            mqtt_publish(&client, MQTT_TOPIC, payload);\n            k_sleep(K_MSEC(SLEEP_TIME_MS));\n        }\n    }\n\n    mqtt_client_disconnect(&client);\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

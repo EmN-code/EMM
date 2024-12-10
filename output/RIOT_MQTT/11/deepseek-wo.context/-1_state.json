@@ -1,0 +1,24 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:5:10: fatal error: net/mqtt.h: No such file or directory"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to an MQTT broker at\u00a047.102.103.1:1883\u00a0to publish state (\u201dwork or not work\u201d) each five seconds. Do not use emcute lib."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: ['/root/RIOT/examples/LLM_Gen/main.c:5:10: fatal error: net/mqtt.h: No such file or directory'] and Invoke the code tool to solve the error and structure the output with a prefix and code block. "
+        ],
+        [
+            "user",
+            "Note: you must ensure that 'MQTTClient.h' is the last header file to be included, if it needs to be used."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <xtimer.h>\n#include <net/sock/tcp.h>\n#include <net/mqtt.h>\n#include \"MQTTClient.h\"\n\n#define SERVER_IP \"47.102.103.1\"\n#define SERVER_PORT 1883\n#define TOPIC \"state\"\n#define PAYLOAD \"work\"\n#define PAYLOAD_LEN 4\n#define INTERVAL (5 * 1000000U)  // 5 seconds in microseconds\n\nstatic Network network;\nstatic MQTTClient mqttClient;\n\nvoid mqtt_publish(void) {\n    MQTTMessage message;\n    message.qos = QOS0;\n    message.retained = 0;\n    message.dup = 0;\n    message.payload = (void*)PAYLOAD;\n    message.payloadlen = PAYLOAD_LEN;\n\n    MQTTPublish(&mqttClient, TOPIC, &message);\n}\n\nint main(void) {\n    printf(\"Starting MQTT client...\\n\");\n\n    // Initialize network and MQTT client\n    NetworkInit(&network);\n    MQTTClientInit(&mqttClient, &network, 1000, NULL, 0, NULL, 0);\n\n    // Connect to MQTT broker\n    int rc = NetworkConnect(&network, SERVER_IP, SERVER_PORT);\n    if (rc != 0) {\n        printf(\"Failed to connect to MQTT broker\\n\");\n        return 1;\n    }\n\n    // Set up MQTT client\n    MQTTPacket_connectData data = MQTTPacket_connectData_initializer;\n    data.MQTTVersion = 3;\n    data.clientID.cstring = \"riot_mqtt_client\";\n    data.keepAliveInterval = 20;\n    data.cleansession = 1;\n\n    rc = MQTTConnect(&mqttClient, &data);\n    if (rc != 0) {\n        printf(\"MQTT connect failed\\n\");\n        return 1;\n    }\n\n    printf(\"Connected to MQTT broker\\n\");\n\n    // Publish state every 5 seconds\n    while (1) {\n        mqtt_publish();\n        xtimer_usleep(INTERVAL);\n    }\n\n    // Disconnect and clean up\n    NetworkDisconnect(&network);\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 11
+}

@@ -1,0 +1,14 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a Zephyr program for the ESP32 that connects to a UDP server at `47.102.103.1:20001` to send device state (\u201dwork or not work\u201d) by UDP method every five seconds."
+        ]
+    ],
+    "generation": "\n#include <zephyr/kernel.h>\n#include <zephyr/net/socket.h>\n#include <zephyr/device.h>\n#include <zephyr/drivers/gpio.h>\n#include <zephyr/sys/printk.h>\n#include <zephyr/sys/__assert.h>\n#include <string.h>\n\n#define UDP_SERVER_IP \"47.102.103.1\"\n#define UDP_SERVER_PORT 20001\n#define DEVICE_STATE_WORK \"work\"\n#define DEVICE_STATE_NOT_WORK \"not work\"\n#define SEND_INTERVAL_SECONDS 5\n\nstatic int create_udp_socket(void)\n{\n    int sock;\n    struct sockaddr_in server_addr;\n\n    sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);\n    if (sock < 0) {\n        printk(\"Error creating socket\\n\");\n        return -1;\n    }\n\n    server_addr.sin_family = AF_INET;\n    server_addr.sin_port = htons(UDP_SERVER_PORT);\n    inet_pton(AF_INET, UDP_SERVER_IP, &server_addr.sin_addr);\n\n    return sock;\n}\n\nstatic void send_device_state(int sock, const char *state)\n{\n    struct sockaddr_in server_addr;\n    server_addr.sin_family = AF_INET;\n    server_addr.sin_port = htons(UDP_SERVER_PORT);\n    inet_pton(AF_INET, UDP_SERVER_IP, &server_addr.sin_addr);\n\n    ssize_t ret = sendto(sock, state, strlen(state), 0, (struct sockaddr *)&server_addr, sizeof(server_addr));\n    if (ret < 0) {\n        printk(\"Error sending data\\n\");\n    } else {\n        printk(\"Sent: %s\\n\", state);\n    }\n}\n\nint main(void)\n{\n    int sock;\n    bool device_working = true; // Simulate device state\n\n    sock = create_udp_socket();\n    if (sock < 0) {\n        return -1;\n    }\n\n    while (1) {\n        if (device_working) {\n            send_device_state(sock, DEVICE_STATE_WORK);\n        } else {\n            send_device_state(sock, DEVICE_STATE_NOT_WORK);\n        }\n\n        device_working = !device_working; // Toggle state\n\n        k_sleep(K_SECONDS(SEND_INTERVAL_SECONDS));\n    }\n\n    close(sock);\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

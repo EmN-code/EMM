@@ -1,0 +1,16 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:6:10: fatal error: net/conn/tcp.h: No such file or directory"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to an MQTT broker at\u00a047.102.103.1:1883\u00a0to publish state (\u201dwork or not work\u201d) each five seconds. Do not use emcute lib."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include <xtimer.h>\n#include <net/sock.h>\n#include <net/conn/tcp.h>\n#include <net/ipv4/addr.h>\n\n#define MQTT_BROKER_IP \"47.102.103.1\"\n#define MQTT_BROKER_PORT 1883\n#define MQTT_TOPIC \"device/state\"\n#define MQTT_PAYLOAD \"work\"\n#define MQTT_QOS 0\n#define MQTT_RETAIN 0\n#define MQTT_KEEPALIVE 60\n#define MQTT_CLIENT_ID \"esp32_client\"\n\n#define BUFFER_SIZE 128\n\nstatic sock_tcp_t sock;\nstatic char buffer[BUFFER_SIZE];\n\nvoid mqtt_connect(void) {\n    sock_tcp_ep_t remote = { .family = AF_INET, .port = MQTT_BROKER_PORT };\n    ipv4_addr_t broker_addr;\n    ipv4_addr_from_str(&broker_addr, MQTT_BROKER_IP);\n    remote.addr.ipv4 = broker_addr;\n\n    if (sock_tcp_connect(&sock, &remote, SOCK_FLAGS_REUSE_EP) < 0) {\n        puts(\"Error: could not connect to MQTT broker\");\n        return;\n    }\n\n    // MQTT Connect Packet\n    uint8_t connect_packet[] = {\n        0x10, 0x16, 0x00, 0x04, 'M', 'Q', 'T', 'T', 0x04, 0x02, 0x00, 0x3C, 0x00, 0x0B, 'e', 's', 'p', '3', '2', '_', 'c', 'l', 'i', 'e', 'n', 't'\n    };\n\n    sock_tcp_send(&sock, connect_packet, sizeof(connect_packet), 0);\n}\n\nvoid mqtt_publish(const char *topic, const char *payload) {\n    uint8_t publish_packet[BUFFER_SIZE];\n    uint8_t *ptr = publish_packet;\n\n    *ptr++ = 0x30; // MQTT PUBLISH packet\n    *ptr++ = 0x00; // Remaining length (to be filled later)\n\n    // Topic length\n    uint16_t topic_len = strlen(topic);\n    *ptr++ = (topic_len >> 8) & 0xFF;\n    *ptr++ = topic_len & 0xFF;\n\n    // Topic\n    memcpy(ptr, topic, topic_len);\n    ptr += topic_len;\n\n    // Payload\n    uint16_t payload_len = strlen(payload);\n    memcpy(ptr, payload, payload_len);\n    ptr += payload_len;\n\n    // Fill in the remaining length\n    publish_packet[1] = ptr - publish_packet - 2;\n\n    sock_tcp_send(&sock, publish_packet, ptr - publish_packet, 0);\n}\n\nint main(void) {\n    puts(\"Starting MQTT client...\");\n\n    // Initialize network stack\n    if (net_init() < 0) {\n        puts(\"Error: could not initialize network stack\");\n        return 1;\n    }\n\n    // Connect to MQTT broker\n    mqtt_connect();\n\n    // Publish state every 5 seconds\n    while (1) {\n        mqtt_publish(MQTT_TOPIC, MQTT_PAYLOAD);\n        xtimer_sleep(5);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

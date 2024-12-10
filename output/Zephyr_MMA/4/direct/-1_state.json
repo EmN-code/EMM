@@ -1,0 +1,19 @@
+{
+    "error": [
+        "E:/local_code/IoT/zephyrproject/zephyr/include/zephyr/device.h:92:41: error: '__device_dts_ord_DT_N_ALIAS_mma8x5x_ORD' undeclared (first use in this function)",
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:58:31: error: storage size of 'sector' isn't known",
+        "E:/local_code/IoT/zephyrproject/zephyr/include/zephyr/devicetree.h:200:36: error: 'DT_N_NODELABEL_storage_PARTITION_ID' undeclared (first use in this function); did you mean 'DT_N_NODELABEL_storage_partition'?",
+        "E:/local_code/IoT/zephyrproject/zephyr/include/zephyr/device.h:92:41: error: '__device_dts_ord_DT_COMPAT_fixed_partitions_LABEL_DT_N_NODELABEL_storage_PARTITION_ID_PARENT_PARENT_ORD' undeclared (first use in this function)"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop Zephyr code on an ESP32. It read MMA8x5x every 5 seconds and uses NVS to store the reading value persistently. "
+        ]
+    ],
+    "generation": "\n#include <zephyr/kernel.h>\n#include <zephyr/device.h>\n#include <zephyr/drivers/sensor.h>\n#include <zephyr/storage/flash_map.h>\n#include <zephyr/fs/nvs.h>\n#include <zephyr/logging/log.h>\n\nLOG_MODULE_REGISTER(main);\n\n#define MMA8X5X_NODE DT_ALIAS(mma8x5x)\n#define NVS_PARTITION_ID FIXED_PARTITION_ID(storage)\n\nstatic struct nvs_fs fs;\n\nvoid store_reading(int16_t reading) {\n    int rc;\n    static uint8_t data[2];\n\n    data[0] = (reading >> 8) & 0xFF;\n    data[1] = reading & 0xFF;\n\n    rc = nvs_write(&fs, 0, data, sizeof(data));\n    if (rc < 0) {\n        LOG_ERR(\"Failed to write to NVS (err %d)\", rc);\n    } else {\n        LOG_INF(\"Stored reading: %d\", reading);\n    }\n}\n\nint16_t read_reading(void) {\n    int rc;\n    static uint8_t data[2];\n\n    rc = nvs_read(&fs, 0, data, sizeof(data));\n    if (rc < 0) {\n        LOG_ERR(\"Failed to read from NVS (err %d)\", rc);\n        return -1;\n    } else {\n        int16_t reading = (data[0] << 8) | data[1];\n        LOG_INF(\"Read reading: %d\", reading);\n        return reading;\n    }\n}\n\nvoid main(void) {\n    const struct device *dev;\n    struct sensor_value accel[3];\n    int16_t reading;\n    int rc;\n\n    dev = DEVICE_DT_GET(MMA8X5X_NODE);\n    if (!device_is_ready(dev)) {\n        LOG_ERR(\"Device %s is not ready\", dev->name);\n        return;\n    }\n\n    struct flash_sector_param sector;\n    rc = flash_get_page_info_by_id(NVS_PARTITION_ID, 0, &sector);\n    if (rc) {\n        LOG_ERR(\"Failed to get flash sector info (err %d)\", rc);\n        return;\n    }\n\n    fs.flash_device = FLASH_AREA_DEVICE(NVS_PARTITION_ID);\n    fs.offset = sector.start;\n    fs.sector_size = sector.size;\n    fs.sector_count = 1;\n\n    rc = nvs_init(&fs, fs.flash_device);\n    if (rc) {\n        LOG_ERR(\"Failed to init NVS (err %d)\", rc);\n        return;\n    }\n\n    while (1) {\n        if (sensor_sample_fetch(dev) < 0) {\n            LOG_ERR(\"Failed to fetch sample\");\n        } else {\n            if (sensor_channel_get(dev, SENSOR_CHAN_ACCEL_XYZ, accel) < 0) {\n                LOG_ERR(\"Failed to get sensor data\");\n            } else {\n                reading = accel[0].val1; // Assuming we are interested in the X-axis reading\n                store_reading(reading);\n            }\n        }\n\n        k_sleep(K_SECONDS(5));\n    }\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

@@ -1,0 +1,18 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32 that uses Non-Volatile Storage (NVS) to store a device state (\u201d1\u201d or \u201c0\u201d) persistently. This process repeats every second, ensuring the temperature is continuously updated in storage."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: [\"/root/RIOT/examples/LLM_Gen/main.c:60:43: error: format '%d' expects argument of type 'int', but argument 2 has type 'int32_t' {aka 'long int'} [-Werror=format=]\"] and Invoke the code tool to solve the error and structure the output with a prefix and code block. "
+        ]
+    ],
+    "generation": "\n#include \"esp_err.h\"\n#include \"nvs_flash.h\"\n#include \"nvs.h\"\n#include \"ztimer.h\"\n#include \"stdio.h\"\n\n#define NVS_NAMESPACE \"storage\"\n#define DEVICE_STATE_KEY \"device_state\"\n\nvoid update_device_state(nvs_handle_t handle, int32_t state) {\n    esp_err_t err = nvs_set_i32(handle, DEVICE_STATE_KEY, state);\n    if (err != ESP_OK) {\n        printf(\"Error setting device state: %d\\n\", err);\n        return;\n    }\n    err = nvs_commit(handle);\n    if (err != ESP_OK) {\n        printf(\"Error committing NVS: %d\\n\", err);\n    }\n}\n\nint main(void) {\n    esp_err_t err;\n    nvs_handle_t my_handle;\n\n    // Initialize NVS\n    err = nvs_flash_init();\n    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {\n        // NVS partition was truncated and needs to be erased\n        // Retry nvs_flash_init\n        ESP_ERROR_CHECK(nvs_flash_erase());\n        err = nvs_flash_init();\n    }\n    ESP_ERROR_CHECK(err);\n\n    // Open NVS\n    err = nvs_open(NVS_NAMESPACE, NVS_READWRITE, &my_handle);\n    if (err != ESP_OK) {\n        printf(\"Error opening NVS handle: %d\\n\", err);\n        return 1;\n    }\n\n    // Main loop to update device state every second\n    int32_t state = 1;\n    while (1) {\n        update_device_state(my_handle, state);\n        printf(\"Device state updated to: %ld\\n\", (long)state);  // Corrected format specifier\n        state = (state == 1) ? 0 : 1;  // Toggle state\n        ztimer_sleep(ZTIMER_MSEC, 1000);  // Sleep for 1 second\n    }\n\n    // Close NVS handle\n    nvs_close(my_handle);\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 3
+}

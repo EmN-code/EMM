@@ -1,0 +1,17 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:25:22: error: assignment to expression with array type",
+        "/root/RIOT/examples/LLM_Gen/main.c:42:9: error: implicit declaration of function 'xtimer_usleep_until'; did you mean 'ztimer64_sleep_until'? [-Werror=implicit-function-declaration]"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a RIOT program for the ESP32 that connects to a UDP server at\u00a0`47.102.103.1:20001`\u00a0to send device state (\u201dwork or not work\u201d) by UDP method every five seconds."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <string.h>\n#include <xtimer.h>\n#include \"net/sock/udp.h\"\n#include \"net/ipv4/addr.h\"\n\n#define SERVER_IP \"47.102.103.1\"\n#define SERVER_PORT 20001\n#define DEVICE_STATE_WORK \"work\"\n#define DEVICE_STATE_NOT_WORK \"not work\"\n#define SEND_INTERVAL (5 * 1000000U)  // 5 seconds in microseconds\n\nstatic sock_udp_ep_t server = { .port = SERVER_PORT, .family = AF_INET };\nstatic char buffer[16];\n\nvoid send_device_state(const char *state) {\n    sock_udp_ep_t remote = server;\n    ipv4_addr_t server_addr;\n\n    if (ipv4_addr_from_str(&server_addr, SERVER_IP) == NULL) {\n        puts(\"Error: invalid server IP address\");\n        return;\n    }\n    remote.addr.ipv4 = server_addr;\n\n    strncpy(buffer, state, sizeof(buffer) - 1);\n    buffer[sizeof(buffer) - 1] = '\\0';\n\n    if (sock_udp_send(NULL, buffer, strlen(buffer), &remote) < 0) {\n        puts(\"Error: failed to send UDP packet\");\n    } else {\n        printf(\"Sent: %s\\n\", buffer);\n    }\n}\n\nint main(void) {\n    xtimer_ticks32_t last_wakeup = xtimer_now();\n\n    while (1) {\n        send_device_state(DEVICE_STATE_WORK);\n        xtimer_usleep_until(&last_wakeup, SEND_INTERVAL);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

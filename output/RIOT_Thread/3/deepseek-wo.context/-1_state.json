@@ -1,0 +1,18 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32, where one thread sends messages to another with different priorities. We also need to achieve inter-thread communication using\u00a0msg_t."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: [\"/root/.espressif/tools/xtensa-esp32-elf/esp-12.2.0_20230208/xtensa-esp32-elf/bin/xtensa-esp32-elf-objcopy: error: the input file '/root/RIOT/examples/LLM_Gen/bin/esp32-wroom-32/esp_bootloader/bootloader.elf' is empty\"] and Invoke the code tool to solve the error and structure the output with a prefix and code block. "
+        ]
+    ],
+    "generation": "\n#include \"thread.h\"\n#include \"msg.h\"\n#include \"xtimer.h\"\n#include \"periph/uart.h\"\n#include \"esp_log.h\"\n\n#define MAIN_QUEUE_SIZE     (8)\n#define PRIORITY_HIGH       (THREAD_PRIORITY_MAIN - 1)\n#define PRIORITY_LOW        (THREAD_PRIORITY_MAIN + 1)\n#define STACK_SIZE          (THREAD_STACKSIZE_DEFAULT)\n\nstatic msg_t main_msg_queue[MAIN_QUEUE_SIZE];\nstatic char stack_high[STACK_SIZE];\nstatic char stack_low[STACK_SIZE];\n\nstatic void *thread_high(void *arg)\n{\n    (void)arg;\n    msg_t msg;\n\n    while (1) {\n        msg_receive(&msg);\n        ESP_LOGI(\"THREAD_HIGH\", \"Received message: %d\", (int)msg.content.value);\n    }\n\n    return NULL;\n}\n\nstatic void *thread_low(void *arg)\n{\n    (void)arg;\n    msg_t msg;\n\n    while (1) {\n        msg_receive(&msg);\n        ESP_LOGI(\"THREAD_LOW\", \"Received message: %d\", (int)msg.content.value);\n    }\n\n    return NULL;\n}\n\nint main(void)\n{\n    msg_init_queue(main_msg_queue, MAIN_QUEUE_SIZE);\n\n    kernel_pid_t pid_high = thread_create(stack_high, sizeof(stack_high), PRIORITY_HIGH,\n                                          THREAD_CREATE_STACKTEST, thread_high, NULL, \"thread_high\");\n\n    kernel_pid_t pid_low = thread_create(stack_low, sizeof(stack_low), PRIORITY_LOW,\n                                         THREAD_CREATE_STACKTEST, thread_low, NULL, \"thread_low\");\n\n    msg_t msg;\n    msg.type = 0;\n\n    for (int i = 0; i < 10; i++) {\n        msg.content.value = i;\n        msg_send(&msg, pid_high);\n        xtimer_sleep(1);\n        msg_send(&msg, pid_low);\n        xtimer_sleep(1);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 3
+}

@@ -1,0 +1,25 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:7: error: \"THREAD_STACKSIZE_MAIN\" redefined [-Werror]",
+        "/root/RIOT/examples/LLM_Gen/main.c:8: error: \"THREAD_PRIORITY_MAIN\" redefined [-Werror]",
+        "/root/RIOT/examples/LLM_Gen/main.c:17:75: error: passing argument 1 of 'thread_get_priority' makes pointer from integer without a cast [-Werror=int-conversion]",
+        "/root/RIOT/examples/LLM_Gen/main.c:27:75: error: passing argument 1 of 'thread_get_priority' makes pointer from integer without a cast [-Werror=int-conversion]",
+        "/root/RIOT/examples/LLM_Gen/main.c:36:5: error: implicit declaration of function 'log_init'; did you mean '_lock_init'? [-Werror=implicit-function-declaration]",
+        "/root/RIOT/examples/LLM_Gen/main.c:40:9: error: implicit declaration of function 'thread_stack'; did you mean 'thread_sleep'? [-Werror=implicit-function-declaration]",
+        "/root/RIOT/examples/LLM_Gen/main.c:40:22: error: 'stack1' undeclared (first use in this function)",
+        "/root/RIOT/examples/LLM_Gen/main.c:8:34: error: 'THREAD_PRIORITY_MAIN' undeclared (first use in this function)",
+        "/root/RIOT/examples/LLM_Gen/main.c:51:22: error: 'stack2' undeclared (first use in this function)",
+        "/root/RIOT/examples/LLM_Gen/main.c:62:27: error: passing argument 1 of 'sched_change_priority' makes pointer from integer without a cast [-Werror=int-conversion]"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32. It starts two threads and change priority at runtime."
+        ]
+    ],
+    "generation": "\n#include \"thread.h\"\n#include \"xtimer.h\"\n#include \"periph/gpio.h\"\n#include \"log.h\"\n\n#define THREAD_STACKSIZE_MAIN   (THREAD_STACKSIZE_DEFAULT)\n#define THREAD_PRIORITY_MAIN    (THREAD_PRIORITY_MAIN)\n#define THREAD_PRIORITY_LOW     (THREAD_PRIORITY_MAIN - 1)\n\nkernel_pid_t pid1, pid2;\n\nvoid *thread1_func(void *arg)\n{\n    (void)arg;\n    while (1) {\n        LOG_INFO(\"Thread 1 running at priority %d\\n\", thread_get_priority(thread_getpid()));\n        xtimer_sleep(1);\n    }\n    return NULL;\n}\n\nvoid *thread2_func(void *arg)\n{\n    (void)arg;\n    while (1) {\n        LOG_INFO(\"Thread 2 running at priority %d\\n\", thread_get_priority(thread_getpid()));\n        xtimer_sleep(1);\n    }\n    return NULL;\n}\n\nint main(void)\n{\n    // Initialize logging\n    log_init();\n\n    // Create thread 1\n    pid1 = thread_create(\n        thread_stack(stack1),\n        THREAD_STACKSIZE_MAIN,\n        THREAD_PRIORITY_MAIN,\n        THREAD_CREATE_STACKTEST,\n        thread1_func,\n        NULL,\n        \"thread1\"\n    );\n\n    // Create thread 2\n    pid2 = thread_create(\n        thread_stack(stack2),\n        THREAD_STACKSIZE_MAIN,\n        THREAD_PRIORITY_LOW,\n        THREAD_CREATE_STACKTEST,\n        thread2_func,\n        NULL,\n        \"thread2\"\n    );\n\n    // Change priority of thread 2 at runtime\n    xtimer_sleep(5);\n    sched_change_priority(pid2, THREAD_PRIORITY_MAIN);\n    LOG_INFO(\"Changed priority of thread 2 to %d\\n\", THREAD_PRIORITY_MAIN);\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

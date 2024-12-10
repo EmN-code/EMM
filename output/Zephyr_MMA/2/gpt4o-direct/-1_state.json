@@ -1,0 +1,18 @@
+{
+    "error": [
+        "E:/local_code/IoT/zephyrproject/zephyr/my/LLM_Gen/src/main.c:18:31: error: array type has incomplete element type 'struct flash_sector_param'",
+        "E:/local_code/IoT/zephyrproject/zephyr/include/zephyr/device.h:92:41: error: '__device_dts_ord_DT_COMPAT_fixed_partitions_LABEL_4_PARENT_PARENT_ORD' undeclared (first use in this function)",
+        "E:/local_code/IoT/zephyrproject/zephyr/include/zephyr/device.h:92:41: error: '__device_dts_ord_DT_N_ALIAS_mma8x5x_ORD' undeclared (first use in this function)"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop Zephyr code on an ESP32. It read MMA8x5x every 5 seconds and uses NVS to store the reading value persistently. "
+        ]
+    ],
+    "generation": "\n#include <zephyr/kernel.h>\n#include <zephyr/device.h>\n#include <zephyr/drivers/sensor.h>\n#include <zephyr/storage/flash_map.h>\n#include <zephyr/fs/nvs.h>\n#include <zephyr/logging/log.h>\n\nLOG_MODULE_REGISTER(main);\n\n#define MMA8X5X_NODE DT_ALIAS(mma8x5x)\n#define NVS_PARTITION_ID FIXED_PARTITION_ID(storage_partition)\n\nstatic struct nvs_fs fs;\n\nvoid init_nvs(void) {\n    int err;\n    struct flash_sector_param sector[1];\n\n    fs.flash_device = FLASH_AREA_DEVICE(NVS_PARTITION_ID);\n    if (!device_is_ready(fs.flash_device)) {\n        LOG_ERR(\"Flash device not ready\");\n        return;\n    }\n\n    err = flash_get_page_info_by_offs(fs.flash_device, FLASH_AREA_OFFSET(NVS_PARTITION_ID), &sector[0]);\n    if (err) {\n        LOG_ERR(\"Unable to get flash page info\");\n        return;\n    }\n\n    fs.sector_size = sector[0].fs_size;\n    fs.sector_count = 1;\n    fs.offset = FLASH_AREA_OFFSET(NVS_PARTITION_ID);\n\n    err = nvs_init(&fs, fs.flash_device);\n    if (err) {\n        LOG_ERR(\"NVS init failed\");\n    }\n}\n\nvoid store_reading(int32_t value) {\n    int err;\n    err = nvs_write(&fs, 0, &value, sizeof(value));\n    if (err < 0) {\n        LOG_ERR(\"NVS write failed\");\n    }\n}\n\nint main(void) {\n    const struct device *dev;\n    struct sensor_value accel[3];\n    int32_t stored_value;\n\n    dev = DEVICE_DT_GET(MMA8X5X_NODE);\n    if (!device_is_ready(dev)) {\n        LOG_ERR(\"Device not ready\");\n        return -1;\n    }\n\n    init_nvs();\n\n    while (1) {\n        if (sensor_sample_fetch(dev) < 0) {\n            LOG_ERR(\"Sensor sample fetch failed\");\n            continue;\n        }\n\n        if (sensor_channel_get(dev, SENSOR_CHAN_ACCEL_XYZ, accel) < 0) {\n            LOG_ERR(\"Sensor channel get failed\");\n            continue;\n        }\n\n        int32_t reading = (accel[0].val1 + accel[1].val1 + accel[2].val1) / 3;\n        store_reading(reading);\n\n        LOG_INF(\"Stored reading: %d\", reading);\n\n        k_sleep(K_SECONDS(5));\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

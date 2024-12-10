@@ -1,0 +1,16 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:16:16: error: 'DHT_PARAM_PULL' undeclared here (not in a function)"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32. It reads the DHT11 every 5 seconds and turns on an LED warning when the temperature exceeds a threshold."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include <xtimer.h>\n#include <periph/gpio.h>\n#include <dht.h>\n\n#define DHT_PIN             GPIO_PIN(0, 18)  // GPIO pin for DHT11\n#define LED_PIN             GPIO_PIN(0, 21)  // GPIO pin for LED\n#define TEMP_THRESHOLD      30               // Temperature threshold in Celsius\n#define INTERVAL            5                // Interval in seconds\n\nstatic dht_t dht_dev;\nstatic dht_params_t dht_params = {\n    .pin = DHT_PIN,\n    .type = DHT11\n};\n\nvoid init_dht(void) {\n    if (dht_init(&dht_dev, &dht_params) != DHT_OK) {\n        puts(\"DHT11 initialization failed\");\n        return;\n    }\n    puts(\"DHT11 initialized successfully\");\n}\n\nvoid init_led(void) {\n    gpio_init(LED_PIN, GPIO_OUT);\n    gpio_clear(LED_PIN);  // Ensure LED is off initially\n    puts(\"LED initialized successfully\");\n}\n\nvoid read_dht_and_check_temp(void) {\n    int16_t temp, hum;\n    if (dht_read(&dht_dev, &temp, &hum) != DHT_OK) {\n        puts(\"Failed to read from DHT11\");\n        return;\n    }\n\n    printf(\"Temperature: %d.%d\u00b0C, Humidity: %d.%d%%\\n\", temp / 10, temp % 10, hum / 10, hum % 10);\n\n    if (temp / 10 > TEMP_THRESHOLD) {\n        gpio_set(LED_PIN);  // Turn on LED\n        puts(\"Temperature exceeds threshold! LED ON\");\n    } else {\n        gpio_clear(LED_PIN);  // Turn off LED\n        puts(\"Temperature within threshold. LED OFF\");\n    }\n}\n\nint main(void) {\n    init_dht();\n    init_led();\n\n    while (1) {\n        read_dht_and_check_temp();\n        xtimer_sleep(INTERVAL);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

@@ -1,0 +1,14 @@
+{
+    "error": [],
+    "errorstate": "pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop a Zephyr program for the ESP32 that connects to a UDP server at `47.102.103.1:20001` to send device state (\u201dwork or not work\u201d) by UDP method every five seconds."
+        ]
+    ],
+    "generation": "\n#include <zephyr/kernel.h>\n#include <zephyr/net/socket.h>\n#include <zephyr/device.h>\n#include <zephyr/drivers/gpio.h>\n#include <zephyr/logging/log.h>\n\n#define UDP_SERVER_IP \"47.102.103.1\"\n#define UDP_SERVER_PORT 20001\n#define SEND_INTERVAL K_SECONDS(5)\n\nLOG_MODULE_REGISTER(main);\n\nconst struct device *gpio_dev;\n\nvoid send_udp_message(int sock, const char *message) {\n    struct sockaddr_in server_addr;\n    server_addr.sin_family = AF_INET;\n    server_addr.sin_port = htons(UDP_SERVER_PORT);\n    inet_pton(AF_INET, UDP_SERVER_IP, &server_addr.sin_addr);\n\n    ssize_t ret = sendto(sock, message, strlen(message), 0, (struct sockaddr *)&server_addr, sizeof(server_addr));\n    if (ret < 0) {\n        LOG_ERR(\"Failed to send UDP message: %d\", errno);\n    } else {\n        LOG_INF(\"Sent UDP message: %s\", message);\n    }\n}\n\nvoid main(void) {\n    int sock;\n    struct sockaddr_in local_addr;\n\n    // Initialize GPIO\n    gpio_dev = device_get_binding(\"GPIO_0\");\n    if (!gpio_dev) {\n        LOG_ERR(\"Could not get GPIO device\");\n        return;\n    }\n\n    // Configure GPIO pin for input\n    gpio_pin_configure(gpio_dev, 13, GPIO_INPUT);\n\n    // Create UDP socket\n    sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);\n    if (sock < 0) {\n        LOG_ERR(\"Failed to create socket: %d\", errno);\n        return;\n    }\n\n    // Bind socket to local address\n    local_addr.sin_family = AF_INET;\n    local_addr.sin_port = 0; // Let the system assign a port\n    local_addr.sin_addr.s_addr = INADDR_ANY;\n    if (bind(sock, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {\n        LOG_ERR(\"Failed to bind socket: %d\", errno);\n        close(sock);\n        return;\n    }\n\n    while (1) {\n        // Read GPIO state\n        int state = gpio_pin_get(gpio_dev, 13);\n        const char *message = state ? \"work\" : \"not work\";\n\n        // Send UDP message\n        send_udp_message(sock, message);\n\n        // Wait for the next interval\n        k_sleep(SEND_INTERVAL);\n    }\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

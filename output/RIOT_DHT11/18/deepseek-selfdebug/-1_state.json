@@ -1,0 +1,20 @@
+{
+    "error": [
+        "/root/RIOT/cpu/esp32/include/periph_cpu.h:96:29: error: passing argument 2 of 'dht_init' makes pointer from integer without a cast [-Werror=int-conversion]"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32. It read dht11 each five seconds. The dht11 connects to gpio 2."
+        ],
+        [
+            "user",
+            "Now, try again. Check the error information: [\"/root/RIOT/cpu/esp32/include/periph_cpu.h:96:29: error: passing argument 2 of 'dht_init' makes pointer from integer without a cast [-Werror=int-conversion]\"] and Invoke the code tool to solve the error and structure the output with a prefix and code block."
+        ]
+    ],
+    "generation": "\n#include \"xtimer.h\"\n#include \"periph/gpio.h\"\n#include \"dht.h\"\n#include <stdio.h>\n\n#define DHT_PIN GPIO_PIN(0, 2)\n#define INTERVAL (5 * 1000 * 1000U) /* 5 seconds in microseconds */\n\nint main(void)\n{\n    dht_t dev;\n    int16_t temp, hum;\n\n    /* Initialize the DHT11 sensor */\n    if (dht_init(&dev, DHT_PIN) != DHT_OK) {\n        puts(\"DHT11 initialization failed\");\n        return 1;\n    }\n\n    while (1) {\n        /* Read temperature and humidity */\n        if (dht_read(&dev, &temp, &hum) != DHT_OK) {\n            puts(\"DHT11 read failed\");\n        } else {\n            printf(\"Temperature: %d.%d\u00b0C, Humidity: %d.%d%%\\n\",\n                   temp / 10, temp % 10, hum / 10, hum % 10);\n        }\n\n        /* Sleep for 5 seconds */\n        xtimer_usleep(INTERVAL);\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 11
+}

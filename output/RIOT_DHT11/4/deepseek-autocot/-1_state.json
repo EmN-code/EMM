@@ -1,0 +1,17 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:48:9: error: implicit declaration of function 'thread_stack'; did you mean 'thread_sleep'? [-Werror=implicit-function-declaration]",
+        "/root/RIOT/examples/LLM_Gen/main.c:48:22: error: 'dht_reader_stack' undeclared (first use in this function); did you mean 'dht_reader'?"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32. It read dht11 each five seconds. The dht11 connects to gpio 2."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include \"thread.h\"\n#include \"xtimer.h\"\n#include \"dht.h\"\n#include \"periph/gpio.h\"\n\n#define DHT_PIN             GPIO_PIN(0, 2)  // GPIO 2 on ESP32\n#define SLEEP_INTERVAL      (5 * 1000000U)  // 5 seconds in microseconds\n\nstatic dht_t dht_dev;\n\nstatic void *dht_reader(void *arg)\n{\n    (void)arg;\n\n    dht_params_t dht_params = {\n        .pin = DHT_PIN,\n        .type = DHT11,\n    };\n\n    if (dht_init(&dht_dev, &dht_params) != DHT_OK) {\n        puts(\"Failed to initialize DHT11 sensor\");\n        return NULL;\n    }\n\n    int16_t temp, hum;\n\n    while (1) {\n        if (dht_read(&dht_dev, &temp, &hum) == DHT_OK) {\n            printf(\"Temperature: %d.%d\u00b0C, Humidity: %d.%d%%\\n\",\n                   temp / 10, temp % 10, hum / 10, hum % 10);\n        } else {\n            puts(\"Failed to read data from DHT11 sensor\");\n        }\n\n        xtimer_usleep(SLEEP_INTERVAL);\n    }\n\n    return NULL;\n}\n\nint main(void)\n{\n    puts(\"Starting DHT11 reader...\");\n\n    thread_create(\n        thread_stack(dht_reader_stack),\n        sizeof(dht_reader_stack),\n        THREAD_PRIORITY_MAIN - 1,\n        THREAD_CREATE_STACKTEST,\n        dht_reader,\n        NULL,\n        \"dht_reader\"\n    );\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}

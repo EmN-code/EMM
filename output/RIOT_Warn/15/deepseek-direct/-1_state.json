@@ -1,0 +1,17 @@
+{
+    "error": [
+        "/root/RIOT/examples/LLM_Gen/main.c:32:28: error: 'DHT_TYPE_DHT11' undeclared (first use in this function)",
+        "/root/RIOT/examples/LLM_Gen/main.c:32:9: error: too many arguments to function 'dht_init'"
+    ],
+    "errorstate": "not pass",
+    "messages": [
+        [
+            "user",
+            "I need to develop RIOT code on an ESP32. It reads the DHT11 every 5 seconds and turns on an LED warning when the temperature exceeds a threshold."
+        ]
+    ],
+    "generation": "\n#include <stdio.h>\n#include \"xtimer.h\"\n#include \"periph/gpio.h\"\n#include \"dht.h\"\n\n#define DHT_PIN             GPIO_PIN(0, 18)  // GPIO pin for DHT11 sensor\n#define LED_PIN             GPIO_PIN(0, 21)  // GPIO pin for LED\n#define TEMP_THRESHOLD      30               // Temperature threshold in Celsius\n#define INTERVAL_MS         5000             // Interval in milliseconds\n\nstatic dht_t dht_dev;\n\nvoid read_dht11(void) {\n    int16_t temp, hum;\n    if (dht_read(&dht_dev, &temp, &hum) == DHT_OK) {\n        printf(\"Temperature: %d.%d\u00b0C, Humidity: %d.%d%%\\n\",\n               temp / 10, temp % 10, hum / 10, hum % 10);\n\n        if (temp / 10 > TEMP_THRESHOLD) {\n            gpio_set(LED_PIN);  // Turn on LED\n        } else {\n            gpio_clear(LED_PIN);  // Turn off LED\n        }\n    } else {\n        puts(\"Failed to read from DHT11 sensor\");\n    }\n}\n\nint main(void) {\n    // Initialize DHT11 sensor\n    if (dht_init(&dht_dev, DHT_TYPE_DHT11, DHT_PIN) == DHT_OK) {\n        puts(\"DHT11 sensor initialized\");\n    } else {\n        puts(\"Failed to initialize DHT11 sensor\");\n        return 1;\n    }\n\n    // Initialize LED pin\n    gpio_init(LED_PIN, GPIO_OUT);\n    gpio_clear(LED_PIN);  // Ensure LED is off initially\n\n    while (1) {\n        read_dht11();\n        xtimer_sleep(INTERVAL_MS / 1000);  // Sleep for 5 seconds\n    }\n\n    return 0;\n}\n",
+    "runtimelogs": "",
+    "runtimestate": "",
+    "iterations": 1
+}
