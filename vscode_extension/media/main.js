@@ -7,7 +7,7 @@ let messages = [
     { sender: 'IoTPilot', text: 'Hello, I\'m IoTpilot.                ' },
 ];
 
-
+// 渲染消息到聊天窗口
 function renderMessages() {
     const chatWindow = document.getElementById('chat-window');
     const message = messages[messages.length - 1];
@@ -29,29 +29,29 @@ function renderMessages() {
     chatWindow.appendChild(messageBox);
 
 
-
+    // 滚动到底部
     chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
-
+// 处理发送按钮点击事件
 async function handleSend() {
     const inputField = document.getElementById('message-input'); 
     const newMessageText = inputField.value.trim();
 
     if (newMessageText !== '') { 
-
+        // 添加新消息到数组 
         messages.push({sender:'user',text:newMessageText}); 
 
-
+        // 清空输入框并重新渲染消息 
         inputField.value=''; 
         renderMessages(); 
 
         try {
-
+            // 获取当前网页的url 与 html内容
             
             const response = await axios.post("http://47.102.103.1:20018/run ",{username:"emm" ,userproblem: newMessageText});
-
-            const content = response['data']['result']; 
+            // 拿到的response.data是一个json对象，包含action和content
+            const content = response['data']['result']; //好奇怪 这里用response['data']可以顺利渲染，response.data会输出[object object]
             console.log("response:\n",response);   
             console.log("content: ",content); 
 
@@ -67,7 +67,7 @@ async function handleSend() {
    } 
 }
 
-document.getElementById('send_button').addEventListener('click', handleSend); 
+document.getElementById('send_button').addEventListener('click', handleSend); // 将handleSend绑定到发送按钮
 
 document.getElementById('message-input').addEventListener('keydown', function(event){
     if (event.key == 'Enter' && !event.shiftKey){
