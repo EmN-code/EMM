@@ -108,7 +108,7 @@ To use IoTPilot, follow these steps:
   </figure>
   <figure style="text-align: center; margin: 12px;">
     <img src="extension/images/4.png" alt="Figure 3" style="max-width: 320px;" />
-    <figcaption>Figure 3: Select and accept interface</figcaption>
+    <figcaption>Figure 3: Select and Accept Interface</figcaption>
   </figure>
 </div>
 
