@@ -1,10 +1,21 @@
+"""Core library for IoT code generation and management.
+
+This module provides core functionality for:
+- Code generation and compilation for IoT devices
+- Runtime execution and monitoring
+- Code analysis and refinement
+- Integration with various IoT operating systems (RIOT, Zephyr, Contiki)
+
+The module uses LangChain for LLM interactions and supports multiple hardware platforms.
+"""
+
 import os
 import threading
+from typing import List, Tuple, Union, Dict, Optional
 
-api_key  = ''
-api_base = '' 
-
-
+# Set environment variables that the OpenAI library expects
+api_key = os.environ.get('OPENAI_API_KEY', '')
+api_base = os.environ.get('OPENAI_API_BASE', '')
 
 lock = threading.Lock()
 
@@ -14,7 +25,6 @@ from langchain_openai import ChatOpenAI
 import logging
 import subprocess
 import re
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 from langchain_community.document_loaders import TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
@@ -34,10 +44,84 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import paramiko
 import os
+from enum import Enum
+import sys
+
+class LogLevel(Enum):
+    """Enum for log levels with ANSI color codes."""
+    INFO = '\033[92m'  # Green
+    WARNING = '\033[93m'  # Yellow
+    ERROR = '\033[91m'  # Red
+    DEBUG = '\033[94m'  # Blue
+    STEP = '\033[95m'  # Purple
+    RESET = '\033[0m'  # Reset color
+
+class ColoredFormatter(logging.Formatter):
+    """Custom formatter adding colors to log levels."""
+    
+    def format(self, record):
+        if not hasattr(record, 'color'):
+            record.color = LogLevel[record.levelname].value if record.levelname in LogLevel.__members__ else ''
+        if not hasattr(record, 'reset'):
+            record.reset = LogLevel.RESET.value
+        return super().format(record)
+
+# Configure logging
+logger = logging.getLogger('IoTCodeGen')
+logger.setLevel(logging.INFO)
+
+# Console handler with color formatting
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setLevel(logging.INFO)
+colored_formatter = ColoredFormatter(
+    '%(asctime)s %(color)s[%(levelname)s]%(reset)s [%(name)s] %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+console_handler.setFormatter(colored_formatter)
+
+# File handler for persistent logging
+file_handler = logging.FileHandler('iot_codegen.log')
+file_handler.setLevel(logging.INFO)
+file_formatter = logging.Formatter(
+    '%(asctime)s [%(levelname)s] [%(name)s] %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+file_handler.setFormatter(file_formatter)
+
+STEP_LEVEL = 25
+logging.addLevelName(STEP_LEVEL, 'STEP')
+
+def step(self, message, *args, **kwargs):
+    """Custom log level for major processing steps."""
+    if self.isEnabledFor(STEP_LEVEL):
+        self._log(STEP_LEVEL, message, args, **kwargs)
+
+logging.Logger.step = step
+
 # Code State
 class CodeState:
+    """Represents the current state of code generation and execution.
     
-    def __init__(self, error="", errorstate="", messages=None, generation="", runtimelogs="", runtimestate="", iterations=0):
+    Attributes:
+        error (str): Error message if any
+        errorstate (str): Current error state ("pass" or "not pass")
+        messages (List[Tuple[str, str]]): List of message tuples (role, content)
+        generation (str): Generated code content
+        runtimelogs (str): Runtime execution logs
+        runtimestate (str): Current runtime state
+        iterations (int): Number of generation iterations
+    """
+    
+    def __init__(
+        self,
+        error: str = "",
+        errorstate: str = "",
+        messages: Optional[List[Tuple[str, str]]] = None,
+        generation: str = "",
+        runtimelogs: str = "",
+        runtimestate: str = "",
+        iterations: int = 0
+    ):
         self.error = error
         self.errorstate = errorstate
         self.messages = messages if messages is not None else []
@@ -46,14 +130,24 @@ class CodeState:
         self.runtimestate = runtimestate
         self.iterations = iterations
 
-    def print_state(self):
+    def print_state(self) -> None:
+        """Print the current state information."""
         print(f"Error: {self.error}")
         print(f"Error State: {self.errorstate}")
         print(f"Messages: {self.messages}")
         print(f"Generation: {self.generation}")
         print(f"Iterations: {self.iterations}")
 
-    def to_json(self, i, count, program_name, process_id, method_type):
+    def to_json(self, i: int, count: int, program_name: str, process_id: int, method_type: str) -> None:
+        """Save the current state to a JSON file.
+        
+        Args:
+            i: Current iteration number
+            count: Total count
+            program_name: Name of the program
+            process_id: Process identifier
+            method_type: Type of method being used
+        """
         data = {
             "error": self.error,
             "errorstate": self.errorstate,
@@ -63,64 +157,89 @@ class CodeState:
             "runtimestate": self.runtimestate,
             "iterations": self.iterations
         }
-        with open(f"../output/"+program_name+'/'+str(process_id)+'/'+str(method_type)+'/'+str(count)+"_state.json", 'w') as json_file:
+        output_path = f"../output/{program_name}/{process_id}/{method_type}/{count}_state.json"
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        with open(output_path, 'w') as json_file:
             json.dump(data, json_file, indent=4)
 
 # Data model
-class code(BaseModel):
+class Code(BaseModel):
     """Schema for code solutions to questions."""
-
     prefix: str = Field(description="Description of the problem and approach")
     block: str = Field(description="Complete code")
-
-class code_deepseek(BaseModel):
+    
+class Ans(BaseModel):
     """Schema for code solutions to questions."""
+    answer: str = Field(description="Answer to the question")
+
+class CodeDeepseek(BaseModel):
+    """Schema for Deepseek code solutions."""
     block: str = Field(description="Complete code")
 
-class context_code(BaseModel):
-    """Schema for code solutions to questions."""
+class ContextCode(BaseModel):
+    """Schema for code context information."""
+    imports: List[str] = Field(description="Imported header files")
+    apis: List[str] = Field(description="Function names of APIs")
 
-    imports: list = Field(description="the imported header files")
-    apis: list = Field(description="the apis")
+class GraphCode(BaseModel):
+    """Schema for code relationship graphs."""
+    relationship: List[List[Union[str, float]]] = Field(
+        description="Relationships between headers and APIs"
+    )
 
-class graph_code(BaseModel):
-    """Schema for code solutions to questions."""
+class ExplainCode(BaseModel):
+    """Schema for code explanations."""
+    explain: List[str] = Field(description="Explanations of headers or APIs")
 
-    relationship: list = Field(description="the relationship between headers and apis")
+class FSMCode(BaseModel):
+    """Schema for Finite State Machine representations."""
+    FSMs: str = Field(description="FSMs in JSON format")
 
+class AnalysisCode(BaseModel):
+    """Schema for code analysis reports."""
+    report: str = Field(description="Error analysis report")
 
-class explain_code(BaseModel):
-    """Schema for code solutions to questions."""
+class OutlineCode(BaseModel):
+    """Schema for code outlines."""
+    outline: List[str] = Field(description="Code outline")
 
-    explain: list = Field(description="the explaination of headers or apis")
+class InjectedCode(BaseModel):
+    """Schema for code with injected logs."""
+    block: str = Field(description="Complete code with injected logs")
 
+class QuestionType(BaseModel):
+    """Schema for question type classification."""
+    type: str = Field(description="Yes or No")
 
-class fsm_code(BaseModel):
-    """Schema for code solutions to questions."""
+class ExplainHeadersAPIs(BaseModel):
+    """Schema for API/header explanations."""
+    explaination: str = Field(description="Explanation of headers or APIs")
+    
+class RemoveHeaderAPIs(BaseModel):
+    """Schema for removing header APIs."""
+    block: str = Field(description="Complete code with removed irrelevant headers")
 
-    FSMs: str = Field(description="the FSMs in the json format")
-
-class analysis_code(BaseModel):
-    """Schema for code solutions to questions."""
-
-    report: str = Field(description="the error analysis report")
-
-class outline_code(BaseModel):
-    """Schema for code solutions to questions."""
-
-    outline: list = Field(description="outline")
-
-class injected_code(BaseModel):
-    """Schema for code solutions to questions."""
-
-    block: str = Field(description="the complete code with injected logs")
-
-def remove_ansi_escape_sequences(text):
+def remove_ansi_escape_sequences(text: str) -> str:
+    """Remove ANSI escape sequences from text.
+    
+    Args:
+        text: Input text containing ANSI escape sequences
+        
+    Returns:
+        Text with ANSI escape sequences removed
+    """
     ansi_escape = re.compile(r'\x1b\[[0-9;]*[A-Za-z]')
     return ansi_escape.sub('', text)
 
-def rag(data_file):
-
+def rag(data_file: str) -> Dict[str, str]:
+    """Load and process data from a CSV file for retrieval-augmented generation.
+    
+    Args:
+        data_file: Path to the CSV file containing code data
+        
+    Returns:
+        Dictionary mapping IDs to code snippets
+    """
     data_dict = {}
     try:
         with open(data_file, mode='r', encoding='utf-8') as file:
@@ -137,8 +256,19 @@ def rag(data_file):
 
     return data_dict
 
-def search_topk_cos(ragdata, question):
-
+def search_topk_cos(
+    ragdata: Dict[str, str],
+    question: str
+) -> List[str]:
+    """Search for top-k most similar items using cosine similarity.
+    
+    Args:
+        ragdata: Dictionary of reference data
+        question: Query text to compare against
+        
+    Returns:
+        List of most similar items
+    """
     data = pd.DataFrame(list(ragdata.items()), columns=['id', 'item'])
     vectorizer = TfidfVectorizer()
     tfidf_matrix = vectorizer.fit_transform(data['item'].tolist() + [question])
@@ -147,15 +277,32 @@ def search_topk_cos(ragdata, question):
     data_sorted = data.sort_values(by='similarity', ascending=False)
     cutoff_index = int(len(data_sorted) * 0.01)
     top_items = data_sorted.head(cutoff_index)
+    
     for _, row in top_items.iterrows():
-        print(f"Item ID: {row['item']}, Similarity Score: {row['similarity']}")
+        logging.info(f"Item ID: {row['item']}, Similarity Score: {row['similarity']}")
+    
     return top_items['item'].tolist()
 
-def search_topk_difflib(ragdata, question, generation,  rate):
-
-    def compute_similarity(code1, code2):
-        similarity = difflib.SequenceMatcher(None, code1, code2).ratio()
-        return similarity
+def search_topk_difflib(
+    ragdata: Dict[str, str],
+    question: str,
+    generation: str,
+    rate: float
+) -> List[str]:
+    """Search for top-k most similar items using difflib sequence matcher.
+    
+    Args:
+        ragdata: Dictionary of reference data
+        question: Query text
+        generation: Generated code text
+        rate: Cutoff rate for similarity matching
+        
+    Returns:
+        List of most similar items
+    """
+    def compute_similarity(code1: str, code2: str) -> float:
+        return difflib.SequenceMatcher(None, code1, code2).ratio()
+    
     data = pd.DataFrame(list(ragdata.items()), columns=['id', 'item'])
     content = str(question) + str(generation)
     data['similarity'] = data['item'].apply(lambda x: compute_similarity(x, content))
@@ -165,23 +312,29 @@ def search_topk_difflib(ragdata, question, generation,  rate):
    
     return top_items['item'].tolist()
 
-def create_vectorstore():
+def create_vectorstore() -> Chroma:
+    """Create and initialize a vector store for semantic search.
     
-    # Vectorstore
-    print("-----start create vectorstore-------")
+    Returns:
+        Initialized Chroma vector store
+    """
+    logging.info("Starting vector store creation")
     loader = TextLoader("../datasets/api.csv")
     data = loader.load()
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=0)
     all_splits = text_splitter.split_documents(data)
     embeddings = OpenAIEmbeddings()
     vectorstore = Chroma.from_documents(documents=all_splits, embedding=embeddings)
-    print("-----end create vectorstore-------")
+    logging.info("Vector store creation completed")
     return vectorstore
 
-def create_fsms():
-
-    # FSMstore
-    FSMS_json = []
+def create_fsms() -> List[Dict]:
+    """Create FSM (Finite State Machine) representations from JSON files.
+    
+    Returns:
+        List of FSM dictionaries loaded from JSON files
+    """
+    fsms_json = []
     for root, _, files in os.walk("../fsms"):
         for file in files:
             if file.endswith('.json'):
@@ -189,14 +342,16 @@ def create_fsms():
                 try:
                     with open(file_path, 'r', encoding='utf-8') as f:
                         data = json.load(f)
-                        FSMS_json.append(data)
+                        fsms_json.append(data)
                 except (json.JSONDecodeError, IOError) as e:
-                    print(f"Error reading {file_path}: {e}")
-    return FSMS_json
+                    logging.error(f"Error reading {file_path}: {e}")
+    return fsms_json
 
 def outline_chain(code_model):
     code_model = "gpt-4o"
     # Outline prompt
+    api_key = os.environ.get('OPENAI_API_KEY', '')
+    api_base = os.environ.get('OPENAI_API_BASE', '')
     outline_prompt = ChatPromptTemplate.from_messages(
         [
             (
@@ -242,11 +397,35 @@ def outline_chain(code_model):
     expt_llm = code_model
     llm = ChatOpenAI(temperature=0, model=expt_llm, openai_api_key= api_key, 
     openai_api_base= api_base)
-    outline_chain_oai = outline_prompt | llm.with_structured_output(outline_code)
+    outline_chain_oai = outline_prompt | llm.with_structured_output(OutlineCode)
     return outline_chain_oai
+
+def chat_chain(model):
+    model = "gpt-4o"
+    api_key = os.environ.get('OPENAI_API_KEY', '')
+    api_base = os.environ.get('OPENAI_API_BASE', '')
+    # Code_gen prompt
+    gen_prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                """You are a coding assistant with expertise in embedded system. \n 
+                You should answer the user question: {question}.
+                """,
+            )
+        ]
+    )
+    expt_llm = model
+    llm = ChatOpenAI(temperature=0, model=expt_llm, openai_api_key= api_key, 
+    openai_api_base= api_base)
+    gen_chain_oai = gen_prompt | llm.with_structured_output(Ans)
+
+    return gen_chain_oai
 
 def openaichain(code_model):
 
+    api_key = os.environ.get('OPENAI_API_KEY', '')
+    api_base = os.environ.get('OPENAI_API_BASE', '')
     # Code_gen prompt
     code_gen_prompt = ChatPromptTemplate.from_messages(
         [
@@ -270,7 +449,7 @@ def openaichain(code_model):
     expt_llm = code_model
     llm = ChatOpenAI(temperature=0, model=expt_llm, openai_api_key= api_key, 
     openai_api_base= api_base)
-    code_gen_chain_oai = code_gen_prompt | llm.with_structured_output(code)
+    code_gen_chain_oai = code_gen_prompt | llm.with_structured_output(Code)
 
     return code_gen_chain_oai
 
@@ -310,6 +489,8 @@ def deepseekchain(code_model):
 def code_refine_chain(code_model):
     code_model = "gpt-4o"
     # Code_gen prompt
+    api_key = os.environ.get('OPENAI_API_KEY', '')
+    api_base = os.environ.get('OPENAI_API_BASE', '')
     code_refine_prompt = ChatPromptTemplate.from_messages(
         [
             (
@@ -330,13 +511,15 @@ def code_refine_chain(code_model):
     expt_llm = code_model
     llm = ChatOpenAI(temperature=0, model=expt_llm, openai_api_key= api_key, 
     openai_api_base= api_base)
-    code_refine_chain_oai = code_refine_prompt | llm.with_structured_output(code)
+    code_refine_chain_oai = code_refine_prompt | llm.with_structured_output(Code)
 
     return code_refine_chain_oai
 
 def context_aware_chain(code_model):
-
+    
     code_model = "gpt-4o"
+    api_key = os.environ.get('OPENAI_API_KEY', '')
+    api_base = os.environ.get('OPENAI_API_BASE', '')
     # create context prompt
     code_gen_prompt = ChatPromptTemplate.from_messages(
         [
@@ -360,13 +543,15 @@ def context_aware_chain(code_model):
     expt_llm = code_model
     llm = ChatOpenAI(temperature=0, model=expt_llm, openai_api_key= api_key, 
     openai_api_base= api_base)
-    context_chain_oai = code_gen_prompt | llm.with_structured_output(context_code)
+    context_chain_oai = code_gen_prompt | llm.with_structured_output(ContextCode)
 
     return context_chain_oai
 
 def graph_create_chain(code_model):
 
     code_model = "gpt-4o"
+    api_key = os.environ.get('OPENAI_API_KEY', '')
+    api_base = os.environ.get('OPENAI_API_BASE', '')
     # create context prompt
     code_gen_prompt = ChatPromptTemplate.from_messages(
         [
@@ -390,13 +575,15 @@ def graph_create_chain(code_model):
     expt_llm = code_model
     llm = ChatOpenAI(temperature=0, model=expt_llm, openai_api_key= api_key, 
     openai_api_base= api_base)
-    graph_chain_oai = code_gen_prompt | llm.with_structured_output(graph_code)
+    graph_chain_oai = code_gen_prompt | llm.with_structured_output(GraphCode)
 
     return graph_chain_oai
 
 def explain_create_chain(code_model):
 
     code_model = "gpt-4o"
+    api_key = os.environ.get('OPENAI_API_KEY', '')
+    api_base = os.environ.get('OPENAI_API_BASE', '')
     # create context prompt
     code_gen_prompt = ChatPromptTemplate.from_messages(
         [
@@ -413,13 +600,15 @@ def explain_create_chain(code_model):
     expt_llm = code_model
     llm = ChatOpenAI(temperature=0, model=expt_llm, openai_api_key= api_key, 
     openai_api_base= api_base)
-    explain_chain_oai = code_gen_prompt | llm.with_structured_output(explain_code)
+    explain_chain_oai = code_gen_prompt | llm.with_structured_output(ExplainCode)
 
     return explain_chain_oai
 
 def execution_aware_chain(code_model):
 
     code_model = "gpt-4o"
+    api_key = os.environ.get('OPENAI_API_KEY', '')
+    api_base = os.environ.get('OPENAI_API_BASE', '')
     # FSM_gen prompt
     fsm_gen_prompt = ChatPromptTemplate.from_messages(
         [
@@ -473,13 +662,15 @@ def execution_aware_chain(code_model):
     expt_llm = code_model
     llm = ChatOpenAI(temperature=0, model=expt_llm, openai_api_key= api_key, 
     openai_api_base= api_base)
-    fsm_chain_oai = fsm_gen_prompt | llm.with_structured_output(fsm_code)
+    fsm_chain_oai = fsm_gen_prompt | llm.with_structured_output(FSMCode)
 
     return fsm_chain_oai
 
 def execution_analysis_chain(code_model):
 
     code_model = "gpt-4o"
+    api_key = os.environ.get('OPENAI_API_KEY', '')
+    api_base = os.environ.get('OPENAI_API_BASE', '')
     # create context prompt
     code_analysis_prompt = ChatPromptTemplate.from_messages(
         [
@@ -504,13 +695,15 @@ def execution_analysis_chain(code_model):
     expt_llm = code_model
     llm = ChatOpenAI(temperature=0, model=expt_llm, openai_api_key= api_key, 
     openai_api_base= api_base)
-    analysis_chain_oai = code_analysis_prompt | llm.with_structured_output(analysis_code)
+    analysis_chain_oai = code_analysis_prompt | llm.with_structured_output(AnalysisCode)
 
     return analysis_chain_oai
 
 def execution_inject_chain(code_model):
 
     code_model = "gpt-4o"
+    api_key = os.environ.get('OPENAI_API_KEY', '')
+    api_base = os.environ.get('OPENAI_API_BASE', '')
     # create context prompt
     code_inject_prompt = ChatPromptTemplate.from_messages(
         [
@@ -531,9 +724,71 @@ def execution_inject_chain(code_model):
     expt_llm = code_model
     llm = ChatOpenAI(temperature=0, model=expt_llm, openai_api_key= api_key, 
     openai_api_base= api_base)
-    inject_chain_oai = code_inject_prompt | llm.with_structured_output(injected_code)
+    inject_chain_oai = code_inject_prompt | llm.with_structured_output(InjectedCode)
 
     return inject_chain_oai
+
+def code_task_chain(code_model):
+    api_key = os.environ.get('OPENAI_API_KEY', '')
+    api_base = os.environ.get('OPENAI_API_BASE', '')
+    """Determine if a given question is a coding task."""
+    coding_task_prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                """You are an expert assistant in identifying coding tasks. 
+                Please analyze the following question and determine if it is a coding-related task. 
+                Simply respond with 'Yes' if it is a coding task and 'No' otherwise.
+                Here is the question:  \n ------- \n  {question} \n ------- \n 
+                """
+            )
+        ]
+    )
+    code_model = "gpt-4o"
+    llm = ChatOpenAI(temperature=0, model=code_model, openai_api_key=api_key, openai_api_base=api_base)
+    codetask_chain = coding_task_prompt | llm.with_structured_output(QuestionType)
+    return codetask_chain
+
+def remove_header_apis_chain(code_model):
+    api_key = os.environ.get('OPENAI_API_KEY', '')
+    api_base = os.environ.get('OPENAI_API_BASE', '')
+    coding_task_prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                """You are an expert assistant in coding. 
+                Here is the question:  \n ------- \n  {question} \n ------- \n 
+                Here is the code:  \n ------- \n  {code} \n ------- \n 
+                You need to remove the headers from the code that are not relevant to the question/code or are outliers.
+                You must not remove any header files that are required by the code.
+                You must not modify the code except for removing the headers.
+                """
+            )
+        ]
+    )
+    code_model = "gpt-4o"
+    llm = ChatOpenAI(temperature=0, model=code_model, openai_api_key=api_key, openai_api_base=api_base)
+    remove_header_apis_chain = coding_task_prompt | llm.with_structured_output(RemoveHeaderAPIs)
+    return remove_header_apis_chain
+
+def api_header_extend_chain(code_model):
+    api_key = os.environ.get('OPENAI_API_KEY', '')
+    api_base = os.environ.get('OPENAI_API_BASE', '')
+    coding_task_prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                """You are an expert assistant in coding. 
+                Please provide a professional explanation for the following headers or APIs, limited to 20 words.
+                Here is the headers or APIs:  \n ------- \n  {question} \n ------- \n 
+                """
+            )
+        ]
+    )
+    code_model = "gpt-4o"
+    llm = ChatOpenAI(temperature=0, model=code_model, openai_api_key=api_key, openai_api_base=api_base)
+    headers_apis_chain = coding_task_prompt | llm.with_structured_output(ExplainHeadersAPIs)
+    return headers_apis_chain
 
 def fsm_generate(model, program_path, full_code, program_name):
 
@@ -672,6 +927,20 @@ def graphinfer(contextgraph):
 
 def substring_similarity(s1, s2):
     
+    
+    # apis_headers_chain_oai = api_header_extend_chain("gpt-4o")
+    # apis_headers_solution = apis_headers_chain_oai.invoke(
+    #       {"question": str(s1)}
+    #     )
+    # s1 = apis_headers_solution.explaination
+    
+    # apis_headers_solution = apis_headers_chain_oai.invoke(
+    #       {"question": str(s2)}
+    #     )
+    # s2 = apis_headers_solution.explaination
+    
+    # print(s1, s2)
+    
     m, n = len(s1), len(s2)
     dp = [[0] * (n + 1) for _ in range(m + 1)]
     max_length = 0
@@ -688,6 +957,7 @@ def substring_similarity(s1, s2):
     return max_length
 
 def substring_similarity_rate(s1, s2):
+    
     m, n = len(s1), len(s2)
     dp = [[0] * (n + 1) for _ in range(m + 1)]
     max_length = 0
@@ -706,15 +976,24 @@ def substring_similarity_rate(s1, s2):
 
     return ratio
 
-def outline(model, question):
-
-    problem = []
-    problem.append(question)
+def outline(
+    model: str,
+    question: str
+) -> List[str]:
+    """Generate code outline based on the question.
+    
+    Args:
+        model: Name of the language model to use
+        question: Input question to generate outline for
+        
+    Returns:
+        List of outline items
+    """
+    problem = [question]
     outline_chain_oai = outline_chain(model)
     outline_solution = outline_chain_oai.invoke(
         {"problem": problem}
     )
-
     return outline_solution.outline
 
 def intergration_gen(process_id, program_name, model, state, question, sub_solutions, iscontext, role):
@@ -746,12 +1025,10 @@ def intergration_gen(process_id, program_name, model, state, question, sub_solut
     )
 
     state.generation = intergration_solution.block
-    print("-----end generate code-------", iterations)
     state.iterations += 1
 
     if iscontext:
 
-        print("-----start context for intergration-------", iterations)
         context_chain_oai = context_aware_chain(model)
         context_solution = context_chain_oai.invoke(
         {"code": intergration_solution.block, "docs": concatenated_content, "problem": question}
@@ -783,7 +1060,6 @@ def intergration_gen(process_id, program_name, model, state, question, sub_solut
                 f"blacklist (you must not use them in your answer code!): {str(blacklist)}"
             )
         ]
-        print("-----end context for intergration-------", iterations)
 
     file_path = '../output/'+program_name+'/'+str(process_id)+'/'+program_name+'_'+str(role)+'_'+str(state.iterations)+'_solution.c'
 
@@ -799,6 +1075,9 @@ def code_gen(process_id, model, state, vectorstore, question, iscontext, isexecu
     errorstate = state.errorstate
     error = state.error
     correct_apis = []
+    correct_headers = []
+    logger.info(f"Starting code generation iteration {iterations}")
+    logger.info(f"Using model: {model}")
 
     messages += [
       (
@@ -806,13 +1085,6 @@ def code_gen(process_id, model, state, vectorstore, question, iscontext, isexecu
         f"{question}"
       )
     ]
-
-    # messages += [
-    #   (
-    #     "user",
-    #     f"{file_content}"
-    #   )
-    # ]
 
     if errorstate == "not pass":
         messages += [
@@ -828,7 +1100,15 @@ def code_gen(process_id, model, state, vectorstore, question, iscontext, isexecu
             "Note: you must ensure that 'MQTTClient.h' is the last header file to be included, if it needs to be used."
         )
         ]
-             
+        if os_type == "FreeRTOS":
+            messages += [
+            (
+                "user",
+                "Note: you must ensure that 'freertos/task.h' is the last header file to be included, if it needs to be used."
+            )
+        ]
+        
+    
     # RAG: imports 
     rate_imports = 1
     if os_type == "RIOT":
@@ -840,16 +1120,19 @@ def code_gen(process_id, model, state, vectorstore, question, iscontext, isexecu
     elif os_type == "Contiki":
         ragimports = rag("../datasets/imports_contiki.csv")
         ragapis = rag("../datasets/api_contiki.csv")
+    elif os_type == "FreeRTOS":
+        ragimports = rag("../datasets/imports_freertos.csv")
+        ragapis = rag("../datasets/api_freertos.csv")
 
     selectedimpots = search_topk_difflib(ragimports, question, state.generation, rate_imports)
     # RAG: apis
-    rate_apis = 0.2
+    rate_apis = 0.25
     selectedapis = search_topk_difflib(ragapis, question, state.generation, rate_apis)
     concatenated_content = "import:"+ str(selectedimpots) + "apis:"+str(selectedapis)
 
     if isexecution and iterations > 0:
         # execution-aware
-        print("Start FSMs analysis")
+        logger.info("Start FSMs analysis")
         # search similar FSMs
         similarities_fsms = []
         FSMS_json = create_fsms()
@@ -866,7 +1149,7 @@ def code_gen(process_id, model, state, vectorstore, question, iscontext, isexecu
         analysis_solution = analysis_chain_oai.invoke(
             {"curr_code":str(state.generation), "curr_FSMs": str(curr_fsms), "ref_FSMs": str(selectedFSMs)}
         )
-        # print(analysis_solution)
+ 
         file_path = '../output/analysis_report.txt'
 
         with open(file_path, 'w') as file:
@@ -889,51 +1172,64 @@ def code_gen(process_id, model, state, vectorstore, question, iscontext, isexecu
                 ) 
             ]
         else:
-            print("userreq do not exist")
+            logger.info("userreq do not exist")
 
     if iscontext and iterations > 0:
 
         # context-aware
-        print("-----start thinking-------", iterations)
+        logger.info(f"start thinking: {iterations}")
         context_chain_oai = context_aware_chain(model)
         context_solution = context_chain_oai.invoke(
         {"code": state.generation, "docs": concatenated_content, "problem": question}
         )
-        print("Thinking 1: relevant headers and apis: ", "end")
+        logger.info(f"Thinking 1: relevant headers and apis: {context_solution.imports}")
+        
+        def is_valid_header(header):
+            if re.match(r'^[\w\-.]+\.h(pp)?$', header):
+                return True
+            return False
+
+        def is_valid_api(api):
+            if re.match(r'^[A-Za-z_]\w*$', api):
+                return True
+            return False
 
         for header in context_solution.imports:
+            if is_valid_header(header) == False:
+                continue
             for imports in selectedimpots:
                 if header == imports and header not in whitelist:
-                    whitelist.append(header)
-            if str(header) in str(selectedapis):
-                if header not in whitelist:
                     whitelist.append(header)
             else:
                 if header not in blacklist:
                     blacklist.append(header)
 
         for api in context_solution.apis:
+            if is_valid_api(api) == False:
+                continue
             if str(api) in str(concatenated_content):
                 if api not in whitelist:
                     whitelist.append(api)                                                                                                
             else:
                 if api not in blacklist:
                     blacklist.append(api)
-        print("Thinking 2: whitelist: ", whitelist)
+                    
+        logger.info(f"Thinking 2: whitelist: {whitelist}")
 
         similarities_headers = []
-
+        whitelist.append(f"{question}")
         for con_header in selectedimpots:
+            raw_con_header = con_header
+            con_header = con_header.split('/')[-1]
             if con_header.endswith('.h'):
                 con_header_temp = con_header[:-2]
             else:
                 con_header_temp = con_header
             if whitelist: 
                 sim = max(substring_similarity(con_header_temp.lower(), item.lower()) for item in whitelist)
-                similarities_headers.append((con_header, sim))
+                similarities_headers.append((raw_con_header, sim))
 
         similarities_headers.sort(key=lambda x: x[1], reverse=True)
-        # print(similarities_headers)
         extend_headers = max(1, int(len(similarities_headers)))
         extend_headers = [header for header, score in similarities_headers[:extend_headers] if score >= 3]
         raw_len = len(whitelist)
@@ -943,25 +1239,27 @@ def code_gen(process_id, model, state, vectorstore, question, iscontext, isexecu
                 whitelist.append(header)
             if len(whitelist) > raw_len + 5:
                 break
-        print("Thinking 3: extended whitelist for headers: ",  whitelist)
-
-        # similarities_api = []
-        # for con_api in selectedapis:
-        #     if whitelist: 
-        #         sim = max(substring_similarity(con_api.lower(), item.lower()) for item in whitelist)
-        #         similarities_api.append((con_api, sim))
-        # similarities_api.sort(key=lambda x: x[1], reverse=True)
-        # # print(similarities_api)
-        # extend_apis = max(1, int(len(similarities_api)))
-        # extend_apis = [header for header, score in similarities_api[:extend_apis] if score >= 3]
-        # raw_len = len(whitelist)
-       
-        # for api in extend_apis:
-        #     if api not in whitelist:
-        #         whitelist.append(api)
-        #     if len(whitelist) > raw_len + 100:
-        #         break
-        # print("Thinking 3: extended whitelist for apis: ",  "end")
+        logger.info(f"Thinking 3: extended whitelist for headers: {whitelist}")
+        
+        is_extend_api = False
+        if is_extend_api: 
+            similarities_api = []
+            for con_api in selectedapis:
+                if whitelist: 
+                    sim = max(substring_similarity(con_api.lower(), item.lower()) for item in whitelist)
+                    similarities_api.append((con_api, sim))
+            similarities_api.sort(key=lambda x: x[1], reverse=True)
+            # print(similarities_api)
+            extend_apis = max(1, int(len(similarities_api)))
+            extend_apis = [header for header, score in similarities_api[:extend_apis] if score >= 3]
+            raw_len = len(whitelist)
+        
+            for api in extend_apis:
+                if api not in whitelist:
+                    whitelist.append(api)
+                if len(whitelist) > raw_len + 100:
+                    break
+            logger.info(f"Thinking 3: extended whitelist for apis")
 
         llm_enable = False
         if llm_enable:
@@ -984,61 +1282,94 @@ def code_gen(process_id, model, state, vectorstore, question, iscontext, isexecu
                         
                         score_list.append([str(i), str(j), float(score)])
 
-        print("Thinking 4: dependency graph: ", "end")
+        logger.info(f"Thinking 4: dependency graph")
         if score_list != None:
             correct_headers, correct_apis = graphinfer(score_list)
-        print("Thinking 5: correct headers or apis: ", correct_headers, correct_apis)
+        logger.info(f"Thinking 5: correct headers or apis: {correct_headers}")
 
         whitelist = []
         whitelist.extend(correct_headers)
         whitelist.extend(correct_apis)
-
+        
+    
         messages += [
             (
                 "user",
-                f"Your answer cannot contain the provided headers and apis from blacklist!): {str(blacklist)}"
+                f"Your answer cannot contain the provided headers and apis from blacklist: {str(blacklist)}"
             )
         ]
 
         messages += [
             (   
                 "user",
-                f"Your answer must contain all the {str(correct_headers)}!"
+                f"Your answer must contain all the headers and apis in the whitelist: {str(whitelist)}!"
             )
         ]
 
 
-        print("-----end thinking-------", iterations)
+        logger.info(f"end thinking: {iterations}")
 
-    print("-----start generate code-------", iterations)
+    logger.info(f"start generate code: {iterations}")
 
     # update rag content
+    
     if os_type == "RIOT":
+        ragimports_new = rag("../datasets/imports_riot.csv")
         ragapis_new = rag("../datasets/api_riot.csv")
     elif os_type == "Zephyr":
+        ragimports_new = rag("../datasets/imports_zephyr.csv")
         ragapis_new = rag("../datasets/api_zephyr.csv")
     elif os_type == "Contiki":
-        ragapis_new = rag("../datasets/api_contiki.csv")    
+        ragimports_new = rag("../datasets/imports_contiki.csv")
+        ragapis_new = rag("../datasets/api_contiki.csv")  
+    elif os_type == "FreeRTOS":
+        ragimports_new = rag("../datasets/imports_freertos.csv")
+        ragapis_new = rag("../datasets/api_freertos.csv")
     selectedapis_new = search_topk_difflib(ragapis_new, question, state.generation, 1)
-    concatenated_content_new = ""
-    for con_api in selectedapis_new:
-        for cor_api in correct_apis:
-            if str(cor_api) in str(con_api):
-                concatenated_content_new += str(con_api)
-                concatenated_content_new += "\n"
-                break
+    selectedimports_new = search_topk_difflib(ragimports_new, question, state.generation, 0.25)
+    
+    concatenated_content_new = str(selectedapis_new)
+    
+    # concatenated_content_new = ""
+    # for con_api in selectedapis_new:
+    #     for cor_header in correct_headers:
+    #         if str(cor_header) in str(con_api):
+    #             if con_api not in concatenated_content_new:
+    #                 concatenated_content_new += str(con_api)
+    #                 concatenated_content_new += "\n"
+    #                 break
+    #     for cor_api in correct_apis:
+    #         if str(cor_api) in str(con_api):
+    #             if con_api not in concatenated_content_new:
+    #                 concatenated_content_new += str(con_api)
+    #                 concatenated_content_new += "\n"
+    #                 break
+    # for con_import in selectedimports_new:
+    #     for cor_header in correct_headers:
+    #         if str(cor_header) in str(con_import):
+    #             if con_import not in concatenated_content_new:
+    #                 concatenated_content_new += str(con_import)
+    #                 concatenated_content_new += "\n"
+    #                 break   
+    #     for cor_api in correct_apis:
+    #         if str(cor_api) in str(con_import):
+    #             if con_import not in concatenated_content_new:
+    #                 concatenated_content_new += str(con_import)
+    #                 concatenated_content_new += "\n"
+    #                 break
             
     if iterations == 0 or concatenated_content_new == "":
-        content = search_topk_difflib(ragapis, question, state.generation, 0.1)
+        content = search_topk_difflib(ragapis, question, state.generation, 0.25)
         concatenated_content_new = content
 
     # print(concatenated_content_new)
-
+    
     if model == "gpt-4o":
         code_gen_chain_oai = openaichain(model)
         code_solution = code_gen_chain_oai.invoke(
             {"context": concatenated_content_new, "messages": messages}
         )
+        print(messages)
         messages += [
             (
                 "assistant",
@@ -1053,33 +1384,57 @@ def code_gen(process_id, model, state, vectorstore, question, iscontext, isexecu
                 code_res = res[res.find("```c") + len("```c"):]
                 code_res = code_res[:code_res.find("```")]
             else:
-                logging.error("generate code fail!")
-            return code_deepseek(block=code_res)
+                logger.error("generate code fail!")
+            return CodeDeepseek(block=code_res)
         
         code_gen_chain_oai = deepseekchain(model)
         code_solution = code_gen_chain_oai.invoke(
             {"context": concatenated_content_new, "messages": messages}
         )
         code_solution = format_output4deepseek(code_solution.content)
+        
+    elif model == "deepseek-reasoner":
+        
+        def format_output4deepseek(res):
+            code_res = ""
+            if "```c" in res:
+                code_res = res[res.find("```c") + len("```c"):]
+                code_res = code_res[:code_res.find("```")]
+            else:
+                logger.error("generate code fail!")
+            return CodeDeepseek(block=code_res)
+        
+        code_gen_chain_oai = deepseekchain(model)
+        code_solution = code_gen_chain_oai.invoke(
+            {"context": concatenated_content_new, "messages": messages}
+        )
+        code_solution = format_output4deepseek(code_solution.content)
+        
     else:
-        print("generate code fail!")
+        logger.error("generate code fail!")
         return {"generate": 0}
 
     state.generation = code_solution.block
-    print("-----end generate code-------", iterations)
-    state.iterations += 1
-
+    logger.info(f"end generate code: {iterations}")
+    
+    remove_header_apis_chain_oai = remove_header_apis_chain(model)
+    remove_header_apis_solution = remove_header_apis_chain_oai.invoke(
+        {"question": str(question), "code": str(state.generation)}
+    )
+    state.generation = remove_header_apis_solution.block
+    
     file_path = '../output/'+program_name+'/'+str(process_id)+'/'+str(method_type)+'/'+program_name+'_'+str(role)+'_'+str(state.iterations)+'_solution.c'
     directory = os.path.dirname(file_path)
     os.makedirs(directory, exist_ok=True)
     with open(file_path, 'w') as file:
         file.write(state.generation)
-    
+    logger.step(f"{program_name} code generation completed for iteration {iterations}")
+    state.iterations += 1
     return {"generate": 1}
 
 def injected_code_gen(model, state, question):
 
-    print("-----start inject logs-------")
+    logger.info("start inject logs")
 
     pre_code = state.generation
 
@@ -1089,7 +1444,7 @@ def injected_code_gen(model, state, question):
     for FSM in FSMS_json:
         sim = difflib.SequenceMatcher(None, str(FSM), (str(question) + str(state.generation))).ratio()
         similarities_fsms.append((str(FSM), sim))
-    
+
     similarities_fsms.sort(key=lambda x: x[1], reverse=True)
     selectedFSMs = [FSM for FSM, _ in similarities_fsms[:1]]
 
@@ -1104,21 +1459,21 @@ def injected_code_gen(model, state, question):
 
     with open(file_path, 'w') as file:
         file.write(state.generation)
-    print("-----end inject logs-------")
+    logger.info("end inject logs")
 
     return inject_solution.block
 
 
 def refine_code(model, state, question):
 
-    print("-----start refine code-------")
+    logger.info("start refine code")
     FSMS_json = create_fsms()
     similarities_fsms = []
     log = state.runtimelogs
     for FSM in FSMS_json:
         sim = difflib.SequenceMatcher(None, str(FSM), (str(question) + str(state.generation))).ratio()
         similarities_fsms.append((str(FSM), sim))
-    
+
     similarities_fsms.sort(key=lambda x: x[1], reverse=True)
     selectedFSMs = [FSM for FSM, _ in similarities_fsms[:2]]
 
@@ -1128,13 +1483,27 @@ def refine_code(model, state, question):
         {"FSMs": selectedFSMs, "code": code, "logs": log}
     )
 
-    state.generation = refine_code.block
+    state.generation = refine_solution.block
 
-    print("-----end refine code-------")
-    return refine_code.block
+    logger.info("-end refine code")
+    return refine_solution.block
 
 
-def compiler(state, hw_type, os_type):
+def compiler(
+    state: CodeState,
+    hw_type: str,
+    os_type: str
+) -> Dict[str, int]:
+    """Compile code for the target hardware and operating system.
+    
+    Args:
+        state: Current code state
+        hw_type: Target hardware type
+        os_type: Target operating system
+        
+    Returns:
+        Dictionary containing compilation status
+    """
     main_code = state.generation
 
     def write_code(filepath, code):
@@ -1172,6 +1541,7 @@ def compiler(state, hw_type, os_type):
         return [], "pass"
 
     if hw_type == "esp32":
+        
         if os_type == "Contiki":
             remote_filepath = "/home/XXX/contiki-ng/my/hello-world/hello-world.c"
             build_command = (
@@ -1220,7 +1590,8 @@ def compiler(state, hw_type, os_type):
             finally:
                 ssh_client.close()
             
-        if os_type == "Zephyr":
+        elif os_type == "Zephyr":
+            
             remote_filepath = "E:\\local_code\\IoT\\zephyrproject\\zephyr\\my\\LLM_Gen\\src\\main.c"
             build_command = (
                 'powershell -Command "conda activate zephyr; cd E:\\local_code\\IoT\\zephyrproject; west build -p always -b esp32_devkitc_wroom E:\\local_code\\IoT\\zephyrproject\\zephyr\\my\\LLM_Gen"'
@@ -1267,6 +1638,7 @@ def compiler(state, hw_type, os_type):
                     state.errorstate = errorstate
 
                 return {"compiler": 1}
+            
             except Exception as e:
                 logging.error(f"SSH connection error: {e}")
                 return {"compiler": 0}
@@ -1293,8 +1665,60 @@ def compiler(state, hw_type, os_type):
             state.errorstate = errorstate
 
             return {"compiler": 1}
+        
+        elif os_type == "FreeRTOS":
+            
+            remote_filepath = "E:\\local_code\\IoT\\esp32-freertos\\idf_test\\main\\main.c"
+            build_command = (
+                'powershell -Command "idf4ps; cd E:\\local_code\\IoT\\esp32-freertos\\idf_test; idf.py build"'
+            )
+            error_patterns = [
+                re.compile(r".*Stop.*", re.MULTILINE),
+                re.compile(r".*error:.*", re.MULTILINE)
+            ]
+            cwd = "E:\\local_code\\IoT\\esp32-freertos\\idf_test"
+            conda_env = "esp32"  
+
+            # SSH Details
+            ssh_host = "10.214.131.123"
+            ssh_port = 2222
+            ssh_username = "wop88"
+            ssh_password = "tkk88965" 
+
+            ssh_client = paramiko.SSHClient()
+            ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+            try:
+                with lock:
+                    ssh_client.connect(ssh_host, port=ssh_port, username=ssh_username, password=ssh_password)
+                    
+                    sftp = ssh_client.open_sftp()
+                    try:
+                        with sftp.open(remote_filepath, "w") as remote_file:
+                            remote_file.write(main_code)
+                    except Exception as e:
+                        logging.error(f"Error writing C code to remote file: {e}")
+                        return {"compiler": 0}
+                    finally:
+                        sftp.close()
+                    remote_command = f"{build_command}"
+                    output = run_remote_command(ssh_client, remote_command)
+                    # print(output)
+
+                    errors, errorstate = check_errors(output, error_patterns)
+                    state.error = errors
+                    state.errorstate = errorstate
+
+                return {"compiler": 1}
+            
+            except Exception as e:
+                logging.error(f"SSH connection error: {e}")
+                return {"compiler": 0}
+            finally:
+                ssh_client.close()
+                
         else:
-            logging.warning("Unsupported operating system type")
+            logging.warning("Unsupported hardware type")
             return {"compiler": 0}
     else:
         logging.warning("Unsupported hardware type")
@@ -1329,7 +1753,7 @@ def executor(state, duration):
             print("Flashing failed:", result.stderr)
         print(logdata)
     except Exception as e:
-        logging.error(f"Error during build process: {e}")
+        logger.error(f"Error during build process: {e}")
 
     state.runtimelogs = str(logdata)
     return logdata
@@ -1346,13 +1770,14 @@ def data_loader(data_file):
                     problem = row['problem']
                     data_dict[code_name] = problem
                 except Exception as e:
-                    logging.error(f"An error occurred while processing the row: {e}")
+                    logger.error(f"An error occurred while processing the row: {e}")
     except Exception as e:
-        logging.error(f"An unexpected error occurred: {e}")
+        logger.error(f"An unexpected error occurred: {e}")
     return data_dict
 
 def code_gen4SELFDEBUG(process_id, model, state, vectorstore, question, program_name, role, device_type, os_type):
     # basline
+
     state.messages = []
     messages = state.messages
     iterations = state.iterations
@@ -1375,17 +1800,22 @@ def code_gen4SELFDEBUG(process_id, model, state, vectorstore, question, program_
         ]
 
     # RAG: imports and apis
-    rate_apis = 0.05
+    rate_apis = 0.15
     if os_type == "RIOT":
         ragapis = rag("../datasets/api_riot.csv")
     elif os_type == "Zephyr":
         ragapis = rag("../datasets/api_zephyr.csv")
     elif os_type == "Contiki":
         ragapis = rag("../datasets/api_contiki.csv") 
+    elif os_type == "FreeRTOS":
+        
+        ragapis = rag("../datasets/api_freertos.csv")
+        
     selectedapis = search_topk_difflib(ragapis, question, state.generation, rate_apis)
     concatenated_content = str(selectedapis)
 
     if model == "gpt-4o":
+        
         code_gen_chain_oai = openaichain(model)
         code_solution = code_gen_chain_oai.invoke(
             {"context": concatenated_content, "messages": messages}
@@ -1396,6 +1826,7 @@ def code_gen4SELFDEBUG(process_id, model, state, vectorstore, question, program_
                 f"prefix: {code_solution.prefix} \n block: {code_solution.block} \n"
             )
         ]
+        
     elif model == "deepseek-coder":
 
         def format_output4deepseek(res):
@@ -1404,8 +1835,8 @@ def code_gen4SELFDEBUG(process_id, model, state, vectorstore, question, program_
                 code_res = res[res.find("```c") + len("```c"):]
                 code_res = code_res[:code_res.find("```")]
             else:
-                logging.error("generate code fail!")
-            return code_deepseek(block=code_res)
+                logger.error("generate code fail!")
+            return CodeDeepseek(block=code_res)
         
         code_gen_chain_oai = deepseekchain(model)
         code_solution = code_gen_chain_oai.invoke(
@@ -1416,15 +1847,15 @@ def code_gen4SELFDEBUG(process_id, model, state, vectorstore, question, program_
         return {"generate": 0}
     
     state.generation = code_solution.block
-    print("-----end generate code-------", iterations)
-    state.iterations += 1
+    print(f"end generate code: {program_name}, {iterations}")
+    
 
-    file_path = '../output/'+program_name+'/'+str(process_id)+'/'+str("gpt4o-selfdebug")+'/'+program_name+'_'+str(role)+'_'+str(state.iterations)+'_solution.c'
+    file_path = '../output/'+program_name+'/'+str(process_id)+'/'+str("deepseek-coder-selfdebug")+'/'+program_name+'_'+str(role)+'_'+str(state.iterations)+'_solution.c'
     directory = os.path.dirname(file_path)
     os.makedirs(directory, exist_ok=True)
     with open(file_path, 'w') as file:
         file.write(state.generation)
-    
+    state.iterations += 1
     return {"generate": 1}
 
 def code_gen4Auto_cot(process_id, model, state, vectorstore, question, program_name, role, device_type, os_type):
@@ -1443,17 +1874,19 @@ def code_gen4Auto_cot(process_id, model, state, vectorstore, question, program_n
     ]
   
     # RAG: imports and apis
-    rate_apis = 0.05
+    rate_apis = 0.15
     if os_type == "RIOT":
         ragapis = rag("../datasets/api_riot.csv")
     elif os_type == "Zephyr":
         ragapis = rag("../datasets/api_zephyr.csv")
     elif os_type == "Contiki":
         ragapis = rag("../datasets/api_contiki.csv") 
+    elif os_type == "FreeRTOS":
+        ragapis = rag("../datasets/api_freertos.csv")
     selectedapis = search_topk_difflib(ragapis, question, state.generation, rate_apis)
     concatenated_content = str(selectedapis)
 
-    print("-----start generate code-------", iterations)
+    logger.info(f"start generate code: {iterations}")
 
     if model == "gpt-4o":
         code_gen_chain_oai = openaichain(model)
@@ -1474,8 +1907,8 @@ def code_gen4Auto_cot(process_id, model, state, vectorstore, question, program_n
                 code_res = res[res.find("```c") + len("```c"):]
                 code_res = code_res[:code_res.find("```")]
             else:
-                logging.error("generate code fail!")
-            return code_deepseek(block=code_res)
+                logger.error("generate code fail!")
+            return CodeDeepseek(block=code_res)
         
         code_gen_chain_oai = deepseekchain(model)
         code_solution = code_gen_chain_oai.invoke(
@@ -1486,15 +1919,16 @@ def code_gen4Auto_cot(process_id, model, state, vectorstore, question, program_n
         return {"generate": 0}
     
     state.generation = code_solution.block
-    print("-----end generate code-------", iterations)
-    state.iterations += 1
+    logger.info(f"end generate code: {iterations}")
+    
 
-    file_path = '../output/'+program_name+'/'+str(process_id)+'/'+str("deepseeker-autocot")+'/'+program_name+'_'+str(role)+'_'+str(state.iterations)+'_solution.c'
+    file_path = '../output/'+program_name+'/'+str(process_id)+'/'+str("gpt4o-autocot")+'/'+program_name+'_'+str(role)+'_'+str(state.iterations)+'_solution.c'
+    print(file_path)
     directory = os.path.dirname(file_path)
     os.makedirs(directory, exist_ok=True)
     with open(file_path, 'w') as file:
         file.write(state.generation)
-    
+    state.iterations += 1
     return {"generate": 1}
 
 def code_gen4Direct(process_id, model, state, vectorstore, question, program_name, role):
@@ -1511,7 +1945,7 @@ def code_gen4Direct(process_id, model, state, vectorstore, question, program_nam
         f"{question}"
       )
     ]
-    print("-----start generate code-------", iterations)
+    print(f"start generate code: {program_name}, {iterations}")
     concatenated_content = ""
     if model == "gpt-4o":
         code_gen_chain_oai = openaichain(model)
@@ -1532,8 +1966,8 @@ def code_gen4Direct(process_id, model, state, vectorstore, question, program_nam
                 code_res = res[res.find("```c") + len("```c"):]
                 code_res = code_res[:code_res.find("```")]
             else:
-                logging.error("generate code fail!")
-            return code_deepseek(block=code_res)
+                logger.error("generate code fail!")
+            return CodeDeepseek(block=code_res)
         
         code_gen_chain_oai = deepseekchain(model)
         code_solution = code_gen_chain_oai.invoke(
@@ -1543,14 +1977,14 @@ def code_gen4Direct(process_id, model, state, vectorstore, question, program_nam
     else:
         return {"generate": 0}
     state.generation = code_solution.block
-    print("-----end generate code-------", iterations)
-    state.iterations += 1
+    print(f"end generate code: {program_name}, {iterations}")
+    
     file_path = '../output/'+program_name+'/'+str(process_id)+'/'+str("gpt4o-direct")+'/'+program_name+'_'+str(role)+'_'+str(state.iterations)+'_solution.c'
     directory = os.path.dirname(file_path)
     os.makedirs(directory, exist_ok=True)
     with open(file_path, 'w') as file:
         file.write(state.generation)
-    
+    state.iterations += 1
     return {"generate": 1}
 
 def merge_sim(question, whitelist):
@@ -1713,6 +2147,3 @@ def eval():
     create_graph(score_list_2, "Graph for Score List 2 (Normalized)")
     create_graph(score_list_3, "Graph for Score List 3 (Combined and Normalized)")
     create_graph(score_list_4, "Graph for Score List 4")
-
-# # merge_sim(None, None)
-# eval()

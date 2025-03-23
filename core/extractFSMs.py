@@ -12,8 +12,8 @@ from graphviz import Digraph
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 model = "gpt-4o"
-api_base = ''
-api_key = ''
+api_base = "https://xiaoai.plus/v1"
+api_key = 'sk-d7FJkaWhvDSKTuoCgFGMjoQLi1anNcbSHdrR8nPMUsLKdvRo'
 
 def gpt4_llmcall(prompt):
     print("call gpt4")

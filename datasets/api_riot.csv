@@ -15,14 +15,8 @@ id,code
 142,int MutexUnlock(Mutex *mutex)
 143,"int ThreadStart(Thread *thread, void (*fn)"
 144,"struct Network {
-    sock_tcp_t sock;    /**< socket number */
-    /**
-     * @brief read internal function
-     */
+    sock_tcp_t sock; 
     int (*mqttread) (struct Network*, unsigned char*, int, int);
-    /**
-     * @brief write internal function
-     */
     int (*mqttwrite) (struct Network*, unsigned char*, int, int);
 } Network;"
 145,#include mutex.h
@@ -438,45 +432,21 @@ id,code
                                         uint32_t timeout,
                                         sock_udp_ep_t *remote)"
 498,"return sock_udp_recv_buf_aux(sock, data, buf_ctx, timeout, remote, NULL)"
-499,"local interface (i.e.
- *          neither the local end point of `sock` nor remote are assigned to
- *          `SOCK_ADDR_ANY_NETIF` but are nevertheless different.
- * @return  -EINVAL, if sock_udp_ep_t::port of @p remote is 0.
- * @return  -ENOMEM, if no memory was available to send @p data.
- * @return  -ENOTCONN, if `remote == NULL`, but @p sock has no remote end point.
- */
+499,"local interface (
 ssize_t sock_udp_sendv_aux(sock_udp_t *sock, const iolist_t *snips,
                            const sock_udp_ep_t *remote, sock_udp_aux_tx_t *aux)"
-500,"local interface (i.e.
- *          neither the local end point of `sock` nor remote are assigned to
- *          `SOCK_ADDR_ANY_NETIF` but are nevertheless different.
- * @return  -EINVAL, if sock_udp_ep_t::port of @p remote is 0.
- * @return  -ENOMEM, if no memory was available to send @p data.
- * @return  -ENOTCONN, if `remote == NULL`, but @p sock has no remote end point.
- */
+500,"local interface (
 static inline ssize_t sock_udp_send_aux(sock_udp_t *sock,
                                         const void *data, size_t len,
                                         const sock_udp_ep_t *remote,
                                         sock_udp_aux_tx_t *aux)"
 501,"return sock_udp_sendv_aux(sock, &snip, remote, aux)"
-502,"local interface (i.e.
- *          neither the local end point of `sock` nor remote are assigned to
- *          `SOCK_ADDR_ANY_NETIF` but are nevertheless different.
- * @return  -EINVAL, if sock_udp_ep_t::port of @p remote is 0.
- * @return  -ENOMEM, if no memory was available to send @p data.
- * @return  -ENOTCONN, if `remote == NULL`, but @p sock has no remote end point.
- */
+502,"local interface (
 static inline ssize_t sock_udp_send(sock_udp_t *sock,
                                     const void *data, size_t len,
                                     const sock_udp_ep_t *remote)"
 503,"return sock_udp_send_aux(sock, data, len, remote, NULL)"
-504,"local interface (i.e.
- *          neither the local end point of `sock` nor remote are assigned to
- *          `SOCK_ADDR_ANY_NETIF` but are nevertheless different.
- * @return  -EINVAL, if sock_udp_ep_t::port of @p remote is 0.
- * @return  -ENOMEM, if no memory was available to send @p data.
- * @return  -ENOTCONN, if `remote == NULL`, but @p sock has no remote end point.
- */
+504,"local interface (
 static inline ssize_t sock_udp_sendv(sock_udp_t *sock,
                                      const iolist_t *snips,
                                      const sock_udp_ep_t *remote)"
@@ -1150,11 +1120,6 @@ static inline ssize_t sock_udp_sendv(sock_udp_t *sock,
 1103,unsigned irq_disable(void)
 1104,for irq_restore()
 1105,"Arduino environment (which lacks the
- *          ""disable / restore"" concept. Enabling interrupts when a different
- *          component disabled them can easily cause unintended behavior there.
- *
- *          Use @ref irq_restore instead.
- */
 MAYBE_INLINE unsigned irq_enable(void)"
 1106,void irq_restore(unsigned state)
 1107,bool irq_is_enabled(void)
@@ -1500,216 +1465,50 @@ typedef struct {
     const char *name;           /**< topic string (currently ASCII only) */
     uint16_t id;                /**< topic id, as assigned by the gateway */
 } emcute_topic_t;"
-1422,"/**
- * @brief   Signature for callbacks fired when publish messages are received
- *
- * @param[in] topic     topic the received data was published on
- * @param[in] data      published data, can be NULL
- * @param[in] len       length of @p data in bytes
- */
+1422,"
 typedef void(*emcute_cb_t)(const emcute_topic_t *topic, void *data, size_t len);
 "
-1423,"/**
- * @brief   Data-structure for keeping track of topics we register to
- */
+1423,"
 typedef struct emcute_sub {
     struct emcute_sub *next;    /**< next subscription (saved in a list) */
     emcute_topic_t topic;       /**< topic we subscribe to */
     emcute_cb_t cb;             /**< function called when receiving messages */
     void *arg;                  /**< optional custom argument */
 } emcute_sub_t;"
-1424,"/**
- * @brief   Connect to a given MQTT-SN gateway (CONNECT)
- *
- * When called while already connected to a gateway, call emcute_discon() first
- * to disconnect from the current gateway.
- *
- * @param[in] remote        address and port of the target MQTT-SN gateway
- * @param[in] clean         set to true to start a clean session
- * @param[in] will_topic    last will topic name, no last will will be
- *                          configured if set to NULL
- * @param[in] will_msg      last will message content, will be ignored if
- *                          @p will_topic is set to NULL
- * @param[in] will_msg_len  length of @p will_msg in byte
- * @param[in] flags         flags used for the last will, allowed are retain and
- *                          QoS
- *
- * @return  EMCUTE_OK on success
- * @return  EMCUTE_NOGW if already connected to a gateway
- * @return  EMCUTE_REJECT on connection refused by gateway
- * @return  EMCUTE_TIMEOUT on connection timeout
- */
-int emcute_con(sock_udp_ep_t *remote, bool clean, const char *will_topic,
+1424,"int emcute_con(sock_udp_ep_t *remote, bool clean, const char *will_topic,
                const void *will_msg, size_t will_msg_len, unsigned flags);
 "
-1425,"/**
- * @brief   Disconnect from the gateway we are currently connected to
- *
- * @return  EMCUTE_OK on success
- * @return  EMCUTE_GW if not connected to a gateway
- * @return  EMCUTE_TIMEOUT on response timeout
- */
-int emcute_discon(void);"
-1426,"/**
- * @brief   Get a topic ID for the given topic name from the gateway
- *
- * @param[in,out] topic     topic to register, topic.name **must not** be NULL
- *
- * @return  EMCUTE_OK on success
- * @return  EMCUTE_NOGW if not connected to a gateway
- * @return  EMCUTE_OVERFLOW if length of topic name exceeds
- *          @ref CONFIG_EMCUTE_TOPIC_MAXLEN
- * @return  EMCUTE_TIMEOUT on connection timeout
- */
-int emcute_reg(emcute_topic_t *topic);"
-1427,"/**
- * @brief   Publish data on the given topic
- *
- * @param[in] topic     topic to send data to, topic **must** be registered
- *                      (topic.id **must** populated).
- * @param[in] buf       data to publish
- * @param[in] len       length of @p data in bytes
- * @param[in] flags     flags used for publication, allowed are QoS and retain
- *
- * @return  EMCUTE_OK on success
- * @return  EMCUTE_NOGW if not connected to a gateway
- * @return  EMCUTE_REJECT if publish message was rejected (QoS > 0 only)
- * @return  EMCUTE_OVERFLOW if length of data exceeds @ref CONFIG_EMCUTE_BUFSIZE
- * @return  EMCUTE_TIMEOUT on connection timeout (QoS > 0 only)
- * @return  EMCUTE_NOTSUP on unsupported flag values
- */
-int emcute_pub(emcute_topic_t *topic, const void *buf, size_t len,
+1425,"int emcute_discon(void);"
+1426,"int emcute_reg(emcute_topic_t *topic);"
+1427,"int emcute_pub(emcute_topic_t *topic, const void *buf, size_t len,
                unsigned flags);
 "
-1428,"/**
- * @brief   Subscribe to the given topic
- *
- * When calling this function, @p sub->topic.name and @p sub->cb **must** be
- * set.
- *
- * @param[in,out] sub   subscription context, @p sub->topic.name and @p sub->cb
- *                      **must** not be NULL.
- * @param[in] flags     flags used when subscribing, allowed are QoS, DUP, and
- *                      topic ID type
- *
- * @return  EMCUTE_OK on success
- * @return  EMCUTE_NOGW if not connected to a gateway
- * @return  EMCUTE_OVERFLOW if length of topic name exceeds
- *          @ref CONFIG_EMCUTE_TOPIC_MAXLEN
- * @return  EMCUTE_TIMEOUT on connection timeout
- */
-int emcute_sub(emcute_sub_t *sub, unsigned flags);"
-1429,"/**
- * @brief   Unsubscripbe the given topic
- *
- * @param[in] sub       subscription context
- *
- * @return  EMCUTE_OK on success
- * @return  EMCUTE_NOGW if not connected to a gateway
- * @return  EMCUTE_TIMEOUT on connection timeout
- */
-int emcute_unsub(emcute_sub_t *sub);"
-1430,"/**
- * @brief   Update the last will topic
- *
- * @param[in] topic     new last will topic
- * @param[in] flags     flags used for the topic, allowed are QoS and retain
- *
- * @return  EMCUTE_OK on success
- * @return  EMCUTE_NOGW if not connected to a gateway
- * @return  EMCUTE_OVERFLOW if length of topic name exceeds
- *          @ref CONFIG_EMCUTE_TOPIC_MAXLEN
- * @return  EMCUTE_REJECT on rejection by the gateway
- * @return  EMCUTE_TIMEOUT on response timeout
- */
-int emcute_willupd_topic(const char *topic, unsigned flags);
+1428,"int emcute_sub(emcute_sub_t *sub, unsigned flags);"
+1429,"int emcute_unsub(emcute_sub_t *sub);"
+1430,"int emcute_willupd_topic(const char *topic, unsigned flags);
 "
-1431,"/**
- * @brief   Update the last will message
- *
- * @param[in] data      new message to send on last will
- * @param[in] len       length of @p data in bytes
- *
- * @return  EMCUTE_OK on success
- * @return  EMCUTE_NOGW if not connected to a gateway
- * @return  EMCUTE_OVERFLOW if length of the given message exceeds
- *          @ref CONFIG_EMCUTE_BUFSIZE
- * @return  EMCUTE_REJECT on rejection by the gateway
- * @return  EMCUTE_TIMEOUT on response timeout
- */
-int emcute_willupd_msg(const void *data, size_t len);
+1431,"int emcute_willupd_msg(const void *data, size_t len);
 "
-1432,"/**
- * @brief   Run emCute, will 'occupy' the calling thread
- *
- * This function will run the emCute message receiver. It will block the thread
- * it is running in.
- *
- * @param[in] port      UDP port used for listening (default: 1883)
- * @param[in] id        client ID (should be unique)
- */
-void emcute_run(uint16_t port, const char *id);
+1432,"void emcute_run(uint16_t port, const char *id);
 "
-1433,"/**
- * @brief   Return the string representation of the given type value
- *
- * This function is for debugging purposes.
- *
- * @param[in] type      MQTT-SN message type
- *
- * @return  string representation of the given type
- * @return  'UNKNOWN' on invalid type value
- */
-const char *emcute_type_str(uint8_t type);"
-1434,"/**
- * @brief Initialize mbox object
- *
- * @note The message queue size must be a power of two!
- *
- * @param[in]   mbox        ptr to mailbox to initialize
- * @param[in]   queue       array of msg_t used as queue
- * @param[in]   queue_size  number of msg_t objects in queue
- */
-static inline void mbox_init(mbox_t *mbox, msg_t *queue,
+1433,"const char *emcute_type_str(uint8_t type);"
+1434,"static inline void mbox_init(mbox_t *mbox, msg_t *queue,
                              unsigned int queue_size)
 {
     mbox_t m = MBOX_INIT(queue, queue_size);
 
     *mbox = m;
 }"
-1435,"/**
- * @brief   Initializes event timer for mbox events.
- *
- * @pre @p evtimer is not NULL.
- *
- * @param[in] evtimer   An event timer
- */
-static inline void evtimer_init_mbox(evtimer_t *evtimer)
+1435,"static inline void evtimer_init_mbox(evtimer_t *evtimer)
 {
     assert(evtimer);
     evtimer_init(evtimer, _evtimer_mbox_handler);
 }"
-1436,"/**
- * @brief   Initializes event timer to handle events via IPC
- *
- * @param[in] evtimer   An event timer
- */
-static inline void evtimer_init_msg(evtimer_t *evtimer)
+1436,"static inline void evtimer_init_msg(evtimer_t *evtimer)
 {
     evtimer_init(evtimer, _evtimer_msg_handler);
 }"
-1437,"/**
- * @brief   Adds mbox event to an event timer.
- *
- * @pre @p evtimer is not NULL.
- * @pre @p event is not NULL.
- * @pre @p mbox is not NULL.
- *
- * @param[in] evtimer   Timer to add @p event.
- * @param[in] event     Event to add.
- * @param[in] mbox      Mbox to store event->msg timer expiration.
- */
-static inline void evtimer_add_mbox(evtimer_t *evtimer, evtimer_mbox_event_t *event, mbox_t *mbox)
+1437,"static inline void evtimer_add_mbox(evtimer_t *evtimer, evtimer_mbox_event_t *event, mbox_t *mbox)
 {
     assert(evtimer);
     assert(event);
@@ -1717,15 +1516,7 @@ static inline void evtimer_add_mbox(evtimer_t *evtimer, evtimer_mbox_event_t *ev
     event->mbox = mbox;
     evtimer_add(evtimer, &(event->event));
 }"
-1438,"/**
- * @brief   Adds event to an event timer that handles events via IPC
- *
- * @param[in] evtimer       An event timer
- * @param[in] event         An event
- * @param[in] target_pid    The PID of the thread that should receive the IPC
- *                          message
- */
-static inline void evtimer_add_msg(evtimer_msg_t *evtimer,
+1438,"static inline void evtimer_add_msg(evtimer_msg_t *evtimer,
                                    evtimer_msg_event_t *event,
                                    kernel_pid_t target_pid)
 {
@@ -1733,80 +1524,22 @@ static inline void evtimer_add_msg(evtimer_msg_t *evtimer,
     event->msg.sender_pid = target_pid;
     evtimer_add(evtimer, &event->event);
 }"
-1439,"/**
- * @brief Receive a message.
- *
- * This function blocks until a message was received.
- *
- * @param[out] m    Pointer to preallocated ``msg_t`` structure, must not be
- *                  NULL.
- *
- * @return  1, Function always succeeds or blocks forever.
- */
-int msg_receive(msg_t *m);"
-1440,"/**
- * @brief Get message from mailbox
- *
- * If the mailbox is empty, this function will return right away.
- *
- * @internal
- *
- * @param[in] mbox  ptr to mailbox to operate on
- * @param[in] msg   ptr to storage for retrieved message
- * @param[in] blocking  block if 1, don't block if 0
- *
- * @return  1   if msg could be retrieved
- * @return  0   otherwise
- */
-int _mbox_get(mbox_t *mbox, msg_t *msg, int blocking);"
-1441,"/**
- * @brief   Event timer
- */
-typedef struct {
+1439,"int msg_receive(msg_t *m);"
+1440,"int _mbox_get(mbox_t *mbox, msg_t *msg, int blocking);"
+1441,"typedef struct {
     ztimer_t timer;                 /**< Timer */
     uint32_t base;                  /**< Absolute time the first event is built on */
     evtimer_callback_t callback;    /**< Handler function for this evtimer's
                                          event type */
     evtimer_event_t *events;        /**< Event queue */
 } evtimer_t;"
-1442,"/**
- * @brief   IPC-message event
- * @extends evtimer_event_t
- */
-typedef struct {
+1442,"typedef struct {
     evtimer_event_t event;      /**< base class */
     msg_t msg;                  /**< the IPC message to generate on event */
 } evtimer_msg_event_t;"
-1443,"/**
- * @brief   Converts an IP address string representation to a byte-represented
- *          IP address
- *
- * @pre (af == AF_INET) || (af == AF_INET6)
- *
- * @param[in] af    Address family of @p src. Must be @ref AF_INET or @ref AF_INET6.
- * @param[in] src   An IP address string representation
- * @param[out] dst   The resulting byte representation
- *
- * @return  1, on success.
- * @return  0, if @p src was malformed or input pointers were NULL.
- * @return  -1, if @p af is not supported.
- */
-int inet_pton(int af, const char *src, void *dst);
+1443,"int inet_pton(int af, const char *src, void *dst);
 "
-1445,"/**
- * @brief Initialize the current thread's message queue.
- *
- * @pre @p num **MUST BE A POWER OF TWO!**
- *
- * @param[in] array Pointer to preallocated array of ``msg_t`` structures, must
- *                  not be NULL.
- * @param[in] num   Number of ``msg_t`` structures in array.
- *                  **MUST BE POWER OF TWO!**
- *
- * If array resides on the stack, the containing stack frame must never be
- * left, not even if it is the current thread's entry function.
- */
-void msg_init_queue(msg_t *array, int num);
+1445,"void msg_init_queue(msg_t *array, int num);
 "
 1451,multi_heap_info_t hinfo
 1452,"heap_caps_get_info(&hinfo,  MALLOC_CAP_DEFAULT);"
@@ -1815,43 +1548,9 @@ void msg_init_queue(msg_t *array, int num);
 1455,"ssize_t sendto(int socket, const void *buffer, size_t length, int flags,
                const struct sockaddr *address, socklen_t address_len);"
 1456,"socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)"
-1457," * rejected (if sent with @ref msg_try_send or from an interrupt) -- just like
- * if the thread were blocked on anything different than message reception.
- *
- * @pre     @p target_pid is not the PID of the current thread.
- *
- * @param[in] m             Pointer to preallocated ``msg_t`` structure with
- *                          the message to send, must not be NULL.
- * @param[out] reply        Pointer to preallocated msg. Reply will be written
- *                          here, must not be NULL. Can be identical to @p m.
- * @param[in] target_pid    The PID of the target process
- *
- * @return  1, if successful.
- */
-int msg_send_receive(msg_t *m, msg_t *reply, kernel_pid_t target_pid);"
-1458,"/**
- * @brief Receive a message.
- *
- * This function blocks until a message was received.
- *
- * @param[out] m    Pointer to preallocated ``msg_t`` structure, must not be
- *                  NULL.
- *
- * @return  1, Function always succeeds or blocks forever.
- */
-int msg_receive(msg_t *m);"
-1459,"/**
- * @brief Replies to a message.
- *
- * Sender must have sent the message with msg_send_receive().
- *
- * @param[in] m         message to reply to, must not be NULL.
- * @param[out] reply    message that target will get as reply, must not be NULL.
- *
- * @return 1, if successful
- * @return -1, on error
- */
-int msg_reply(msg_t *m, msg_t *reply);"
+1457,"int msg_send_receive(msg_t *m, msg_t *reply, kernel_pid_t target_pid);"
+1458,"int msg_receive(msg_t *m);"
+1459,"int msg_reply(msg_t *m, msg_t *reply);"
 1460,"typedef struct {
     kernel_pid_t sender_pid;    /**< PID of sending thread. Will be filled in
                                      by msg_send. */
@@ -1867,18 +1566,7 @@ int msg_reply(msg_t *m, msg_t *reply);"
 1463,"nvs_set_i32(my_handle, ""temperature"", temp);"
 1464,nvs_commit(my_handle);
 1465,nvs_close(my_handle);
-1466,"/**
- * @brief   Change the priority of the given thread
- *
- * @note    This functions expects interrupts to be disabled when called!
- *
- * @pre     (thread != NULL)
- * @pre     (priority < SCHED_PRIO_LEVELS)
- *
- * @param[in,out] thread    target thread
- * @param[in]     priority  new priority to assign to @p thread
- */
-void sched_change_priority(thread_get_active(), uint8_t priority);"
+1466,"void sched_change_priority(thread_get_active(), uint8_t priority);"
 1468,mma8x5x_data_t data
 1469,"typedef struct {
     i2c_t i2c;                  /**< I2C bus the device is connected to */
@@ -1887,32 +1575,8 @@ void sched_change_priority(thread_get_active(), uint8_t priority);"
     uint8_t range;              /**< scale range to use */
     uint8_t offset[3];          /**< data offset in X, Y, and Z direction */
 } mma8x5x_params_t;"
-1470,"/**
- * @brief   Read accelerometer's data
- *
- * Acceleration will be calculated as:<br>
- *     \f$ a = \frac{value \cdot 1000}{1024} \cdot mg \f$ if full scale is set
- *     to 2g<br>
- *     \f$ a = \frac{value \cdot 1000}{512} \cdot mg \f$ if full scale is set to
- *     4g<br>
- *     \f$ a = \frac{value \cdot 1000}{256} \cdot mg \f$ if full scale is set to
- *     8g<br>
- *
- * @param[in]  dev          device descriptor of accelerometer
- * @param[out] data         the current acceleration data [in mg]
- */
-void mma8x5x_read(const mma8x5x_t *dev, mma8x5x_data_t *data);"
-1471,"/**
- * @brief   Initialize the MMA8x5x accelerometer driver.
- *
- * @param[out] dev          device descriptor of accelerometer to initialize
- * @param[in]  params       configuration parameters
- *
- * @return                  MMA8X5X_OK on success
- * @return                  MMA8X5X_NOI2C if initialization of I2C bus failed
- * @return                  MMA8X5X_NODEV if accelerometer test failed
- */
-int mma8x5x_init(mma8x5x_t *dev, const mma8x5x_params_t *params);
+1470,"void mma8x5x_read(const mma8x5x_t *dev, mma8x5x_data_t *data);"
+1471,"int mma8x5x_init(mma8x5x_t *dev, const mma8x5x_params_t *params);
 static mma8x5x_t dev;
 mma8x5x_data_t data；
     mma8x5x_params_t params = {
@@ -1938,24 +1602,9 @@ mma8x5x_data_t data；
 1485,"timer.callback = timer_callback;
     timer.arg = NULL;
 "
-1486,"/**
- * @brief   Adds event to an event timer that handles events via IPC
- *
- * @param[in] evtimer       An event timer
- * @param[in] event         An event
- * @param[in] target_pid    The PID of the thread that should receive the IPC
- *                          message
- */
-static inline void evtimer_add_msg(evtimer_msg_t *evtimer,
+1486,"static inline void evtimer_add_msg(evtimer_msg_t *evtimer,
                                    evtimer_msg_event_t *event,
                                    kernel_pid_t target_pid)"
 1487,"thread_get(kernel_pid_t pid)
 sched_change_priority(thread_get(pid), THREAD_PRIORITY_MAIN);"
-1488,"/**
- * @brief       Retrieve a thread control block by PID.
- * @details     This is a bound-checked variant of accessing `sched_threads[pid]` directly.
- *              If you know that the PID is valid, then don't use this function.
- * @param[in]   pid   Thread to retrieve.
- * @return      `NULL` if the PID is invalid or there is no such thread.
- */
-static inline thread_t *thread_get(kernel_pid_t pid)"
+1488,"static inline thread_t *thread_get(kernel_pid_t pid)"

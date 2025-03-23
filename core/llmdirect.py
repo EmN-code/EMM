@@ -9,20 +9,27 @@ def single_agent(process_id, model, question, max_attempts, program_name, role):
     while compile_state.errorstate != "pass" and attempts <= max_attempts:
         attempts += 1
         code_gen4Direct(process_id, model, compile_state, vectorstore, question, program_name, role)
-        compiler(compile_state, "esp32", "Contiki")
-        compile_state.to_json(compile_state.iterations, -1, program_name, process_id, "gpt4o-direct")
+        compiler(compile_state, "esp32", "FreeRTOS")
+        compile_state.to_json(compile_state.iterations, -1, program_name, process_id, "deepseek-coder-direct")
 
 def main():
     process_ids = 21
     app_path = "../datasets/app.csv"
     data_dict = data_loader(app_path)
-    code_names = [  
-        "Contiki_DHT11",
-        "Contiki_led",
-        "Contiki_UDP",
-        "Contiki_COAP",
-        "Contiki_MQTT",
+    code_names = [
+        "FreeRTOS_MMA",
+        "FreeRTOS_MQTT",
+        "FreeRTOS_COAP",
+        "FreeRTOS_UDP",
+        "FreeRTOS_FLASH",
     ]
+    # code_names = [  
+    #     "Contiki_DHT11",
+    #     "Contiki_led",
+    #     "Contiki_UDP",
+    #     "Contiki_COAP",
+    #     "Contiki_MQTT",
+    # ]
     # code_names = [  
     #     "RIOT_MQTT",
     #     "RIOT_COAP",
@@ -59,7 +66,7 @@ def main():
     # ]
     threads = []
     max_attempts = 0
-    model = "gpt-4o"
+    model = "deepseek-coder"
     for _, code_name in enumerate(code_names):
         print(f"{code_name} start generation>>>")
         role = -1
