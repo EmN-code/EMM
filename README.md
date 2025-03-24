@@ -82,20 +82,20 @@ For more details, refer to the [official VS Code extension documentation](https:
 
 Here are the configurable parameters for the IoTPilot plugin (see Figure 1):
 
-1. Username: It must be provided. It can be any input (currently no validation is required).
-2. API_KEY and API Base URL: It must be provided. By default, the deepseek-coder model is used.
-3. Model: Choose the backend LLM for IoTPilot, supporting GPT4o and deepseek-coder.
-4. OS Type: RIOT/FreeRTOS/Zephyr/Contiki. RIOT is fully supported, while the others are a work in progress.
-5. Device Type: Select the device on which the application will run.
-6. Max Attempts: The maximum number of self-debug attempts allowed. More iterations can improve the quality of the final code but will also take longer (We recommend setting this to 3).
-7. Use Context: This is a temporary parameter. If set to True, IoTPilot will introduce self-thinking chains; otherwise, it functions similarly to existing methods (such as MapCoder).
+* Username: It must be provided. It can be any input (currently no validation is required).
+* API_KEY and API Base URL: It must be provided. By default, the deepseek-coder model is used.
+* Model: Choose the backend LLM for IoTPilot, supporting GPT4o and deepseek-coder.
+* OS Type: RIOT/FreeRTOS/Zephyr/Contiki. RIOT is fully supported, while the others are a work in progress.
+* Device Type: Select the device on which the application will run.
+* Max Attempts: The maximum number of self-debug attempts allowed. More iterations can improve the quality of the final code but will also take longer (We recommend setting this to 3).
+* Use Context: This is a temporary parameter. If set to True, IoTPilot will introduce self-thinking chains; otherwise, it functions similarly to existing methods (such as MapCoder).
 
 To use IoTPilot, follow these steps:
-* First, you can configure IoTPIlot parameters and save settings (see Figure 1).
-* Second, you can enter your IoT development requirements in the dialog box, and IoTPilot will generate code (see Figure 2). 
-* Third, after the server returns IoTPilot's generated results, there will be two buttons in the upper right corner of each response. These buttons allow you to conveniently copy the code to the clipboard or directly overwrite the current file content with that code (see Figure 3). 
-* Fourth, if most of the code is usable but contains minor errors, you can select the relevant code lines and continue the conversation with IoTPilot. This selected content will be included in the prompt to assist IoTPilot in subsequent generation (see Figure 3).
-* With the generated code, you can quickly start your IoT programming tasks. You can interact with IoTPilot in multiple iterations to enhance the quality of the generated code, making it eventually usable.
+1. First, you can configure IoTPIlot parameters and save settings (see Figure 1).
+2. Second, you can enter your IoT development requirements in the dialog box, and IoTPilot will generate code (see Figure 2). 
+3. Third, after the server returns IoTPilot's generated results, there will be two buttons in the upper right corner of each response. These buttons allow you to conveniently copy the code to the clipboard or directly overwrite the current file content with that code (see Figure 3). 
+4. Fourth, if most of the code is usable but contains minor errors, you can select the relevant code lines and continue the conversation with IoTPilot. This selected content will be included in the prompt to assist IoTPilot in subsequent generation (see Figure 3).
+5. With the generated code, you can quickly start your IoT programming tasks. You can interact with IoTPilot in multiple iterations to enhance the quality of the generated code, making it eventually usable.
  
  <div style="display: flex; justify-content: center; align-items: flex-end; gap: 10px; flex-wrap: wrap;">
   <figure style="text-align: center; margin: 12px;">
